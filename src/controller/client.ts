@@ -2,7 +2,8 @@ import { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import crypto from 'crypto';
-import { createUser, getUserByEmail, getUserByUsername } from '../schema/admin';
+import { createUser, deleteUserById, getUserByEmail, getUserById, getUserByUsername, getUsers, updateUserById } from '../schema/client';
+
 
 const random = () => crypto.randomBytes(128).toString('base64');
 
@@ -10,7 +11,7 @@ const authentication = (salt: string, password: string) => {
     return crypto.createHmac('sha256', [salt, password].join('/')).update(`${process.env.PASSWORD_SECRET}`).digest('hex');;
 }
 
-export const signIn = async (req: Request, res: Response) => {
+export const clientSignIn = async (req: Request, res: Response) => {
     const oAuth2Client = new OAuth2Client(
         process.env.CLIENT_ID,
         process.env.CLIENT_SECRET,
@@ -73,19 +74,19 @@ export const signIn = async (req: Request, res: Response) => {
     }
 };
 
-export const signUp = async (req: Request, res: Response) => {
+export const clientSignUp = async (req: Request, res: Response) => {
     try {
-        const { firstname, lastname, username, email, password } = req.body;
+        const { firstname, lastname, username, email, password, phone } = req.body;
 
-        if (!email || !password || !username) {
-            return res.sendStatus(400);
+        if (!email || !password || !username || !phone) {
+            return res.status(400).json({ error: "Missing required fields." });
         }
 
         const existingUser = await getUserByUsername(username);
         const existingEmail = await getUserByEmail(email);
 
         if (existingUser || existingEmail) {
-            return res.status(400).json({ error: 'Admin already exists.' });
+            return res.status(400).json({ error: "User already exists." });
         }
 
         const security = req.headers['authorization'];
@@ -100,6 +101,7 @@ export const signUp = async (req: Request, res: Response) => {
             lastname,
             email,
             username,
+            phone,
             authentication: {
                 salt,
                 password: authentication(salt, password),
@@ -124,3 +126,51 @@ export const signUp = async (req: Request, res: Response) => {
         return res.sendStatus(400);
     }
 }
+
+export const getClients = async (req: Request, res: Response) => {
+  try {
+    const clients = await getUsers();
+    return res.status(200).json(clients);
+  } catch (err) {
+    console.error(err);
+    return res.sendStatus(400);
+  }
+};
+
+export const updateClient = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    if (!id) {
+      return res.status(400).json({ message: "Client ID is required." });
+    }
+
+    const existingClient = await getUserById(id);
+    if (!existingClient) {
+      return res.status(404).json({ message: "Client not found." });
+    }
+
+    const updatedClient = await updateUserById(id, updates);
+
+    return res.status(200).json({
+      message: "Client updated successfully.",
+      client: updatedClient,
+    });
+  } catch (error) {
+    console.error("Error updating client:", error);
+    return res.status(500).json({ message: "Server error." });
+  }
+};
+
+
+export const deleteClient = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await deleteUserById(id);
+    return res.status(200).json({ message: "Client deleted." });
+  } catch (err) {
+    console.error(err);
+    return res.sendStatus(400);
+  }
+};

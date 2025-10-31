@@ -22,7 +22,7 @@ const AdminSchema = new Schema<IAdmin>({
     salt: { type: String, select: false },
     sessionToken: { type: String, select: false },
   },
-}, { collection: "admin" });
+}, { collection: "admin", timestamps: true });
 
 export const AdminModel = mongoose.model<IAdmin>("Admin", AdminSchema);
 
