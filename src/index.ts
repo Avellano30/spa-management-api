@@ -16,6 +16,4 @@ mongoose.connect(MONGO_URL, { dbName: DB_NAME })
 
 app.listen(port, () => {
   console.log(`🚀 Server running at http://localhost:${port}`);
-  console.log(`📘 Swagger Docs: http://localhost:${port}/api/docs`);
-  console.log(`📕 ReDoc Docs:   http://localhost:${port}/api/redoc`);
 });
