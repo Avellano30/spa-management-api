@@ -1,39 +1,21 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import cookieParser from 'cookie-parser';
-import compression from 'compression';
-import cors from 'cors';
-import mongoose from 'mongoose';
-import router from './router';
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import app from "./app";
 
-require('dotenv').config();
+dotenv.config();
 
-const app = express();
-app.use(cors());
-
-app.use(compression());
-app.use(cookieParser());
-app.use(bodyParser.json());
-app.use('/', router());
-
-const port = 3000;
-
-app.get('/keep-alive', (req, res) => {
-  res.send('Server is alive!');
-});
-
+const port = process.env.PORT || 3000;
 const DB_NAME = process.env.DB_NAME;
 const MONGO_URL = `${process.env.MONGO_URL}`;
 
 mongoose.Promise = global.Promise;
-mongoose.connect(MONGO_URL, {
-    dbName: DB_NAME, // Specify the database name here
-}).then(() => {
-    console.log('Connected to MongoDB');
-}).catch((err) => {
-    console.error('Error connecting to MongoDB:', err);
-});
+
+mongoose.connect(MONGO_URL, { dbName: DB_NAME })
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`🚀 Server running at http://localhost:${port}`);
+  console.log(`📘 Swagger Docs: http://localhost:${port}/api/docs`);
+  console.log(`📕 ReDoc Docs:   http://localhost:${port}/api/redoc`);
 });

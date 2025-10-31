@@ -1,20 +1,30 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-const COLLECTION_NAME = 'admin';
+export interface IAdmin extends Document {
+  firstname: string;
+  lastname: string;
+  username: string;
+  email: string;
+  authentication: {
+    password?: string;
+    salt?: string;
+    sessionToken?: string;
+  };
+}
 
-const UserSchema = new Schema({
-    firstname: { type: String, required: true },
-    lastname: { type: String, required: true},
-    username: { type: String, required: true, unique: true },
-    email: { type: String, required: true, unique: true },
-    authentication: {
-        password: { type: String, required: false, select: false },
-        salt: { type: String, select: false },
-        sessionToken: { type: String, select: false },
-    }
-}, { collection: COLLECTION_NAME });
+const AdminSchema = new Schema<IAdmin>({
+  firstname: { type: String, required: true },
+  lastname: { type: String, required: true },
+  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
+  authentication: {
+    password: { type: String, select: false },
+    salt: { type: String, select: false },
+    sessionToken: { type: String, select: false },
+  },
+}, { collection: "admin" });
 
-export const AdminModel = mongoose.model("Admin", UserSchema, COLLECTION_NAME);
+export const AdminModel = mongoose.model<IAdmin>("Admin", AdminSchema);
 
 export const getUsers = () => AdminModel.find();
 export const getUserById = (userId: string) => AdminModel.findById(userId);
