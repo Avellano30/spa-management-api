@@ -3,87 +3,70 @@ import { AppointmentModel } from "../schema/appointment";
 import { ClientModel } from "../schema/client";
 import { ServiceModel } from "../schema/service";
 import { SpaSettingsModel } from "../schema/settings";
-import { isOverlapping } from "../helpers/checkOverlap";
-import { toMinutes } from "../helpers/convertTime";
-
+import { toHHMM, toMinutes } from "../helpers/timeUtils";
 
 export const createAppointment = async (req: Request, res: Response) => {
-  try {
-    const { clientId, serviceId, date, startTime, modeOfPayment, notes } = req.body;
+	try {
+		const { clientId, serviceId, date, startTime, notes } = req.body;
 
-    if (!clientId || !serviceId || !date || !startTime)
-      return res.status(400).json({ message: "Missing required fields" });
+		if (!clientId || !serviceId || !date || !startTime)
+			return res.status(400).json({ message: "Missing required fields" });
 
-    // Check client status
-    const client = await ClientModel.findById(clientId);
-    if (!client || client.status !== "active")
-      return res.status(400).json({ message: "Client not active or not found" });
+		// Check client status
+		const client = await ClientModel.findById(clientId);
+		if (!client || client.status !== "active")
+			return res.status(400).json({ message: "Client not active or not found" });
 
-    // Check service availability
-    const service = await ServiceModel.findById(serviceId);
-    if (!service || service.status !== "available")
-      return res.status(400).json({ message: "Service unavailable" });
+		// Check service availability
+		const service = await ServiceModel.findById(serviceId);
+		if (!service || service.status !== "available")
+			return res.status(400).json({ message: "Service unavailable" });
 
-    // Get settings (rooms, hours)
-    const settings = await SpaSettingsModel.findOne();
-    if (!settings)
-      return res.status(500).json({ message: "Settings not configured" });
+		// Get settings
+		const settings = await SpaSettingsModel.findOne();
+		if (!settings)
+			return res.status(500).json({ message: "Settings not configured" });
 
-    // Compute start & end in minutes
-    const startMin = toMinutes(startTime);
-    const endMin = startMin + service.duration;
-    const openMin = toMinutes(settings.openingTime);
-    const closeMin = toMinutes(settings.closingTime);
+		// Compute time bounds
+		const startMin = toMinutes(startTime);
+		const endMin = startMin + service.duration;
+		const openMin = toMinutes(settings.openingTime);
+		const closeMin = toMinutes(settings.closingTime);
 
-    // Convert back to HH:mm string
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const hours = Math.floor(endMin / 60) % 24;
-    const mins = endMin % 60;
-    const endTime = `${pad(hours)}:${pad(mins)}`;
+		if (startMin < openMin || endMin > closeMin)
+			return res.status(400).json({ message: "Outside operating hours" });
 
-    // Validate time slot within open hours
-    if (startMin < openMin || endMin > closeMin)
-      return res.status(400).json({ message: "Outside operating hours" });
+		const endTime = toHHMM(endMin);
 
-    // Check overlapping bookings
-    const existingAppointments = await AppointmentModel.find({
-      date,
-      status: { $in: ["Pending", "Approved", "Rescheduled"] },
-    });
+		// Count overlapping appointments for room availability
+		const existingAppointments = await AppointmentModel.countDocuments({
+			date,
+			status: { $in: ["Approved", "Rescheduled"] },
+			startTime: { $lt: endTime },
+			endTime: { $gt: startTime },
+		});
 
-    let overlapCount = 0;
-    for (const appt of existingAppointments) {
-      if (isOverlapping(startTime, endTime, appt.startTime, appt.endTime)) {
-        overlapCount++;
-      }
-    }
+		if (existingAppointments >= settings.totalRooms)
+			return res.status(400).json({ message: "All rooms are booked for this time slot" });
 
-    if (overlapCount >= settings.totalRooms) {
-      return res.status(400).json({ message: "All rooms are booked for this time slot" });
-    }
+		const appointment = await AppointmentModel.create({
+			clientId,
+			serviceId,
+			date,
+			startTime,
+			endTime,
+			status: "Pending",
+			notes,
+		});
 
-    const totalPrice = service.price;
-    const newAppointment = await AppointmentModel.create({
-      clientId,
-      serviceId,
-      date,
-      startTime,
-      endTime,
-      status: "Pending",
-      modeOfPayment,
-      totalPrice,
-      notes,
-    });
-
-    res.status(201).json({
-      message: "Appointment created successfully",
-      appointment: newAppointment,
-    });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
+		res.status(201).json({
+			message: "Appointment created successfully",
+			appointment,
+		});
+	} catch (error: any) {
+		res.status(500).json({ message: error.message });
+	}
 };
-
 
 export const updateAppointment = async (req: Request, res: Response) => {
 	try {
@@ -140,44 +123,32 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
 			return res.status(400).json({ message: "Date and start time are required" });
 
 		const appointment = await AppointmentModel.findById(id);
-		if (!appointment)
-			return res.status(404).json({ message: "Appointment not found" });
+		if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
 		const service = await ServiceModel.findById(appointment.serviceId);
-		if (!service)
-			return res.status(400).json({ message: "Service not found" });
+		if (!service) return res.status(400).json({ message: "Service not found" });
 
 		const settings = await SpaSettingsModel.findOne();
-		if (!settings)
-			return res.status(500).json({ message: "Settings not configured" });
+		if (!settings) return res.status(500).json({ message: "Settings not configured" });
 
-		// compute new end time based on service duration
 		const startMin = toMinutes(startTime);
 		const endMin = startMin + service.duration;
 		const openMin = toMinutes(settings.openingTime);
 		const closeMin = toMinutes(settings.closingTime);
 
-		// convert back to HH:mm
-		const pad = (n: number) => String(n).padStart(2, "0");
-		const endTime = `${pad(Math.floor(endMin / 60) % 24)}:${pad(endMin % 60)}`;
-
-		// Validate within open hours
 		if (startMin < openMin || endMin > closeMin)
 			return res.status(400).json({ message: "Outside operating hours" });
 
-		// Check overlapping appointments
-		const existingAppointments = await AppointmentModel.find({
-			date,
-			status: { $in: ["Pending", "Approved", "Rescheduled"] },
-			_id: { $ne: id },
-		});
+		const endTime = toHHMM(endMin);
 
-		let overlapCount = 0;
-		for (const appt of existingAppointments) {
-			if (isOverlapping(startTime, endTime, appt.startTime, appt.endTime)) {
-				overlapCount++;
-			}
-		}
+		// Check overlapping slots
+		const overlapCount = await AppointmentModel.countDocuments({
+			date,
+			status: { $in: ["Approved", "Rescheduled"] },
+			_id: { $ne: id },
+			startTime: { $lt: endTime },
+			endTime: { $gt: startTime },
+		});
 
 		if (overlapCount >= settings.totalRooms)
 			return res.status(400).json({ message: "All rooms booked for that slot" });
@@ -188,15 +159,11 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
 		appointment.status = "Rescheduled";
 		await appointment.save();
 
-		res.status(200).json({
-			message: "Appointment rescheduled successfully",
-			appointment,
-		});
+		res.status(200).json({ message: "Appointment rescheduled successfully", appointment });
 	} catch (error: any) {
 		res.status(500).json({ message: error.message });
 	}
 };
-
 
 export const completeAppointment = async (req: Request, res: Response) => {
 	try {

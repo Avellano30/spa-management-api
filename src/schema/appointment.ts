@@ -7,10 +7,6 @@ export interface IAppointment extends Document {
 	startTime: string; // e.g. "11:00"
 	endTime: string;   // e.g. "13:30"
 	status: "Pending" | "Approved" | "Cancelled" | "Rescheduled" | "Completed";
-	modeOfPayment?: "Online" | "Cash";
-	downPayment?: number;
-	remainingBalance?: number;
-	totalPrice?: number;
 	notes?: string;
 	createdAt: Date;
 	updatedAt: Date;
@@ -28,10 +24,6 @@ const AppointmentSchema = new Schema<IAppointment>(
 			enum: ["Pending", "Approved", "Cancelled", "Rescheduled", "Completed"],
 			default: "Pending",
 		},
-		modeOfPayment: { type: String, enum: ["Online", "Cash"], default: "Cash" },
-		downPayment: { type: Number, default: 0 },
-		remainingBalance: { type: Number, default: 0 },
-		totalPrice: { type: Number },
 		notes: { type: String, trim: true },
 	},
 	{ timestamps: true, collection: "appointments" }

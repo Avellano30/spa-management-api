@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { SpaSettingsModel } from "../schema/settings";
-import { toMinutes } from "../helpers/convertTime";
+import { toMinutes } from "../helpers/timeUtils";
 
 export const getSpaSettings = async (req: Request, res: Response) => {
     try {
