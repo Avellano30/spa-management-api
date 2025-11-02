@@ -228,6 +228,7 @@ export const getClientAppointments = async (req: Request, res: Response) => {
 
 		const appointments = await AppointmentModel.find({ clientId })
 			.populate("serviceId", "name price duration category status")
+			.populate("payments")
 			.sort({ date: -1 });
 
 		if (!appointments.length) {

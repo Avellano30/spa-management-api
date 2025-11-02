@@ -4,6 +4,7 @@ import client from './client';
 import service from './service';
 import appointment from './appointment';
 import settings from './settings';
+import payment from './payment';
 
 const router = express.Router();
 
@@ -13,6 +14,7 @@ export default (): express.Router => {
     service(router);
     appointment(router);
     settings(router);
+    payment(router);
     
     return router;
 }

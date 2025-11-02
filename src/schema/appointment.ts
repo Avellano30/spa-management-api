@@ -24,12 +24,22 @@ const AppointmentSchema = new Schema<IAppointment>(
 			enum: ["Pending", "Approved", "Cancelled", "Rescheduled", "Completed"],
 			default: "Pending",
 		},
-		notes: { type: String, trim: true },
+		notes: { type: String, trim: true, default: "" },
 	},
 	{ timestamps: true, collection: "appointments" }
 );
 
 AppointmentSchema.index({ date: 1, startTime: 1, endTime: 1 });
+
+AppointmentSchema.virtual("payments", {
+	ref: "Payment",
+	localField: "_id",
+	foreignField: "appointmentId",
+});
+
+AppointmentSchema.set("toJSON", { virtuals: true });
+AppointmentSchema.set("toObject", { virtuals: true });
+
 
 export const AppointmentModel = mongoose.model<IAppointment>(
 	"Appointment",
