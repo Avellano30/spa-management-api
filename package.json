@@ -25,7 +25,6 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.2",
     "multer": "^2.0.2",
-    "multer-storage-cloudinary": "^4.0.0",
     "redoc-express": "^2.1.2",
     "stripe": "^19.2.0",
     "swagger-jsdoc": "^6.2.8",
