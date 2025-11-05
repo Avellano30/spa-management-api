@@ -26,6 +26,9 @@ export const createAppointment = async (req: Request, res: Response) => {
 		const settings = await SpaSettingsModel.findOne();
 		if (!settings)
 			return res.status(500).json({ message: "Settings not configured" });
+		
+		if (date < new Date().toISOString().split('T')[0])
+			return res.status(400).json({ message: "Cannot book an appointment in the past" });
 
 		// Compute time bounds
 		const startMin = toMinutes(startTime);
@@ -57,12 +60,10 @@ export const createAppointment = async (req: Request, res: Response) => {
 			endTime,
 			status: "Pending",
 			notes,
+      		isTemporary: true,
 		});
 
-		res.status(201).json({
-			message: "Appointment created successfully",
-			appointment,
-		});
+		res.status(201).json(appointment);
 	} catch (error: any) {
 		res.status(500).json({ message: error.message });
 	}
@@ -117,7 +118,7 @@ export const cancelAppointment = async (req: Request, res: Response) => {
 export const rescheduleAppointment = async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
-		const { date, startTime } = req.body;
+		const { date, startTime, notes } = req.body;
 
 		if (!date || !startTime)
 			return res.status(400).json({ message: "Date and start time are required" });
@@ -130,6 +131,9 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
 
 		const settings = await SpaSettingsModel.findOne();
 		if (!settings) return res.status(500).json({ message: "Settings not configured" });
+
+		if (date < new Date().toISOString().split('T')[0])
+			return res.status(400).json({ message: "Cannot reschedule to a past date" });
 
 		const startMin = toMinutes(startTime);
 		const endMin = startMin + service.duration;
@@ -153,6 +157,7 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
 		if (overlapCount >= settings.totalRooms)
 			return res.status(400).json({ message: "All rooms booked for that slot" });
 
+		if (notes) appointment.notes = notes;
 		appointment.date = date;
 		appointment.startTime = startTime;
 		appointment.endTime = endTime;
@@ -239,4 +244,14 @@ export const getClientAppointments = async (req: Request, res: Response) => {
 	} catch (error: any) {
 		res.status(500).json({ message: error.message });
 	}
+};
+
+export const deleteTemporaryAppointment = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await AppointmentModel.findOneAndDelete({ _id: id, isTemporary: true });
+    res.json({ message: "Temporary appointment deleted" });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
 };

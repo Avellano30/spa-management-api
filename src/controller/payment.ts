@@ -36,7 +36,7 @@ export const createPaymentSession = async (req: Request, res: Response) => {
                 },
             ],
             mode: "payment",
-            success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+            success_url: `${process.env.FRONTEND_URL}/payment-success`,
             cancel_url: `${process.env.FRONTEND_URL}/payment-cancelled`,
         });
 
@@ -84,6 +84,7 @@ export const stripeWebhook = async (req: Request, res: Response) => {
             if (payment.type === "Full" || payment.type === "Downpayment") {
                 await AppointmentModel.findByIdAndUpdate(payment.appointmentId, {
                     status: "Approved",
+                    isTemporary: false,
                 });
             }
         }

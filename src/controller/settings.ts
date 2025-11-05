@@ -30,7 +30,7 @@ export const createSpaSettings = async (req: Request, res: Response) => {
             closingTime,
         });
 
-        res.status(201).json({ message: "Spa settings created successfully", settings: newSettings });
+        res.status(201).json(newSettings);
     } catch (error: any) {
         res.status(500).json({ message: error.message });
     }
@@ -80,10 +80,7 @@ export const updateSpaSettings = async (req: Request, res: Response) => {
             { new: true, upsert: true }
         );
 
-        res.status(200).json({
-            message: "Spa settings updated successfully",
-            settings: updatedSettings,
-        });
+        res.status(200).json(updatedSettings);
     } catch (error: any) {
         res.status(500).json({ message: error.message });
     }

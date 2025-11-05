@@ -5,7 +5,7 @@ export interface IClient extends Document {
 	lastname: string;
 	username: string;
 	email: string;
-	phone: string;
+	phone?: string;
 	status: "active" | "inactive" | "banned";
 	authentication: {
 		password?: string;
@@ -20,7 +20,7 @@ const ClientSchema = new Schema<IClient>(
 		lastname: { type: String, required: true },
 		username: { type: String, required: true, unique: true },
 		email: { type: String, required: true, unique: true },
-		phone: { type: String, required: true },
+		phone: { type: String, required: false },
 		status: { type: String, enum: ["active", "inactive", "banned"], default: "active" },
 		authentication: {
 			password: { type: String, select: false },

@@ -39,10 +39,7 @@ export const createService = async (req: Request, res: Response) => {
 
         await service.save();
 
-        return res.status(201).json({
-            message: "Service created successfully",
-            service,
-        });
+        return res.status(201).json(service);
     } catch (error: any) {
         if (uploadedPublicId) {
             try {
@@ -121,10 +118,7 @@ export const updateService = async (req: Request, res: Response) => {
             {new: true}
         );
 
-        res.status(200).json({
-            message: "Service updated successfully",
-            service: updatedService,
-        });
+        res.status(200).json(updatedService);
     } catch (error: any) {
         if (uploadedPublicId) {
             try {

@@ -8,6 +8,7 @@ export interface IAppointment extends Document {
 	endTime: string;   // e.g. "13:30"
 	status: "Pending" | "Approved" | "Cancelled" | "Rescheduled" | "Completed";
 	notes?: string;
+	isTemporary: boolean;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -25,6 +26,10 @@ const AppointmentSchema = new Schema<IAppointment>(
 			default: "Pending",
 		},
 		notes: { type: String, trim: true, default: "" },
+		isTemporary: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	{ timestamps: true, collection: "appointments" }
 );

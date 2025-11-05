@@ -9,6 +9,7 @@ import {
 	cancelAppointment,
 	rescheduleAppointment,
 	completeAppointment,
+	deleteTemporaryAppointment,
 } from "../controller/appointment";
 
 export default (router: express.Router) => {
@@ -21,4 +22,5 @@ export default (router: express.Router) => {
 	router.patch("/appointment/:id/cancel", cancelAppointment);
 	router.patch("/appointment/:id/reschedule", rescheduleAppointment);
 	router.patch("/appointment/:id/complete", completeAppointment);
+	router.delete("/appointment/:id", deleteTemporaryAppointment);
 }

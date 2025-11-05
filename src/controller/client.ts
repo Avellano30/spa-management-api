@@ -27,12 +27,28 @@ export const clientSignIn = async (req: Request, res: Response) => {
             const decoded = jwt.decode(String(tokens.id_token)) as JwtPayload;
             const gmail = decoded?.email;
             const user = await getUserByEmail(gmail);
-
+            
             if (!user) {
-                return res.sendStatus(403);
-            }
+                const newUser = await createUser({
+                    firstname: decoded.given_name,
+                    lastname: decoded.family_name ? decoded.family_name : "",
+                    phone: "",
+                    username: decoded.sub,
+                    email: decoded.email,
+                    authentication: {
+                        salt: null,
+                        password: null,
+                        sessionToken: tokens.id_token,
+                    }
+                })
+                const sessionToken = jwt.sign({ userId: newUser._id }, `${process.env.SECRET_KEY}`, { expiresIn: '3h' });
 
-            return res.status(200).json({ tokens, firstName: user.firstname, lastName: user.lastname, email: user.email });
+                return res.status(200).json({ token: sessionToken, firstName: decoded.given_name, lastName: decoded.family_name ? decoded.family_name : "", email: decoded.email});
+            }
+            // Generate a JWT session token
+            const sessionToken = jwt.sign({ userId: user._id }, `${process.env.SECRET_KEY}`, { expiresIn: '3h' });
+
+            return res.status(200).json({ token: sessionToken, firstName: user.firstname, lastName: user.lastname, email: user.email });
         } catch (error) {
             console.error('Error exchanging code for tokens:', error);
             return res.status(400).json({
@@ -44,16 +60,16 @@ export const clientSignIn = async (req: Request, res: Response) => {
         // Handle manual login
         try {
             const user = await getUserByEmail(email).select('+authentication.salt +authentication.password');
-
+            
             if (!user) {
                 return res.sendStatus(400);
             }
-
+            
             if (user.authentication && user.authentication.salt) {
                 const expectedHash = authentication(user.authentication.salt, password);
 
                 if (user.authentication.password !== expectedHash) {
-                    return res.sendStatus(403);
+                    return res.sendStatus(401);
                 }
 
                 // Generate a JWT session token
@@ -63,6 +79,8 @@ export const clientSignIn = async (req: Request, res: Response) => {
                 await user.save();
 
                 return res.status(200).json({ token: sessionToken, firstName: user.firstname, lastName: user.lastname, email: user.email });
+            } else {
+                return res.sendStatus(406);
             }
         } catch (err) {
             console.error(err);
@@ -112,7 +130,7 @@ export const clientSignUp = async (req: Request, res: Response) => {
             const expectedHash = authentication(user.authentication.salt, password);
 
             if (user.authentication.password !== expectedHash) {
-                return res.sendStatus(403);
+                return res.sendStatus(401);
             }
 
             // Generate a JWT session token
