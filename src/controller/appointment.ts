@@ -14,8 +14,21 @@ export const createAppointment = async (req: Request, res: Response) => {
 
 		// Check client status
 		const client = await ClientModel.findById(clientId);
-		if (!client || client.status !== "active")
-			return res.status(400).json({ message: "Client not active or not found" });
+		if (!client) {
+			return res.status(404).json({ message: "Client not found." });
+		}
+
+		if (client.status === "banned") {
+			return res
+				.status(403)
+				.json({ message: "Account is banned and cannot book appointments." });
+		}
+
+		if (client.status === "inactive") {
+			return res
+				.status(403)
+				.json({ message: "Account is inactive. Please contact support." });
+		}
 
 		// Check service availability
 		const service = await ServiceModel.findById(serviceId);
@@ -26,7 +39,7 @@ export const createAppointment = async (req: Request, res: Response) => {
 		const settings = await SpaSettingsModel.findOne();
 		if (!settings)
 			return res.status(500).json({ message: "Settings not configured" });
-		
+
 		if (date < new Date().toISOString().split('T')[0])
 			return res.status(400).json({ message: "Cannot book an appointment in the past" });
 
@@ -60,7 +73,7 @@ export const createAppointment = async (req: Request, res: Response) => {
 			endTime,
 			status: "Pending",
 			notes,
-      		isTemporary: true,
+			isTemporary: true,
 		});
 
 		res.status(201).json(appointment);
@@ -247,11 +260,11 @@ export const getClientAppointments = async (req: Request, res: Response) => {
 };
 
 export const deleteTemporaryAppointment = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    await AppointmentModel.findOneAndDelete({ _id: id, isTemporary: true });
-    res.json({ message: "Temporary appointment deleted" });
-  } catch (err: any) {
-    res.status(500).json({ message: err.message });
-  }
+	try {
+		const { id } = req.params;
+		await AppointmentModel.findOneAndDelete({ _id: id, isTemporary: true });
+		res.json({ message: "Temporary appointment deleted" });
+	} catch (err: any) {
+		res.status(500).json({ message: err.message });
+	}
 };
