@@ -85,6 +85,7 @@ export const stripeWebhook = async (req: Request, res: Response) => {
                 await AppointmentModel.findByIdAndUpdate(payment.appointmentId, {
                     status: "Approved",
                     isTemporary: false,
+                    $unset: { expiresAt: "" },
                 });
             }
         }

@@ -5,45 +5,42 @@ import { ServiceModel } from "../schema/service";
 import { SpaSettingsModel } from "../schema/settings";
 import { toHHMM, toMinutes } from "../helpers/timeUtils";
 
+// 🕒 1 hour = 3600000 ms (adjust as needed)
+const TEMP_APPT_LIFETIME_MS = 2 * 60 * 1000;
+
+/** ===============================
+ * CREATE APPOINTMENT
+ * =============================== */
 export const createAppointment = async (req: Request, res: Response) => {
 	try {
-		const { clientId, serviceId, date, startTime, notes } = req.body;
+		const { clientId, serviceId, date, startTime, notes, isTemporary = false } = req.body;
 
 		if (!clientId || !serviceId || !date || !startTime)
 			return res.status(400).json({ message: "Missing required fields" });
 
-		// Check client status
 		const client = await ClientModel.findById(clientId);
-		if (!client) {
-			return res.status(404).json({ message: "Client not found." });
-		}
+		if (!client)
+			return res.status(404).json({ message: "Client not found" });
 
-		if (client.status === "banned") {
-			return res
-				.status(403)
-				.json({ message: "Account is banned and cannot book appointments." });
-		}
+		if (["banned", "inactive"].includes(client.status))
+			return res.status(403).json({
+				message:
+					client.status === "banned"
+						? "Account is banned and cannot book appointments."
+						: "Account is inactive. Please contact support.",
+			});
 
-		if (client.status === "inactive") {
-			return res
-				.status(403)
-				.json({ message: "Account is inactive. Please contact support." });
-		}
-
-		// Check service availability
 		const service = await ServiceModel.findById(serviceId);
 		if (!service || service.status !== "available")
 			return res.status(400).json({ message: "Service unavailable" });
 
-		// Get settings
 		const settings = await SpaSettingsModel.findOne();
 		if (!settings)
 			return res.status(500).json({ message: "Settings not configured" });
 
-		if (date < new Date().toISOString().split('T')[0])
+		if (date < new Date().toISOString().split("T")[0])
 			return res.status(400).json({ message: "Cannot book an appointment in the past" });
 
-		// Compute time bounds
 		const startMin = toMinutes(startTime);
 		const endMin = startMin + service.duration;
 		const openMin = toMinutes(settings.openingTime);
@@ -54,27 +51,34 @@ export const createAppointment = async (req: Request, res: Response) => {
 
 		const endTime = toHHMM(endMin);
 
-		// Count overlapping appointments for room availability
-		const existingAppointments = await AppointmentModel.countDocuments({
+		// Check for overlapping approved/rescheduled appointments
+		const overlappingCount = await AppointmentModel.countDocuments({
 			date,
 			status: { $in: ["Approved", "Rescheduled"] },
 			startTime: { $lt: endTime },
 			endTime: { $gt: startTime },
 		});
 
-		if (existingAppointments >= settings.totalRooms)
+		if (overlappingCount >= settings.totalRooms)
 			return res.status(400).json({ message: "All rooms are booked for this time slot" });
 
-		const appointment = await AppointmentModel.create({
+		const appointmentData: any = {
 			clientId,
 			serviceId,
 			date,
 			startTime,
 			endTime,
-			status: "Pending",
 			notes,
-			isTemporary: true,
-		});
+			status: "Pending",
+			isTemporary,
+		};
+
+		// ✅ If temporary, set expiresAt for TTL cleanup
+		if (isTemporary) {
+			appointmentData.expiresAt = new Date(Date.now() + TEMP_APPT_LIFETIME_MS);
+		}
+
+		const appointment = await AppointmentModel.create(appointmentData);
 
 		res.status(201).json(appointment);
 	} catch (error: any) {
@@ -82,11 +86,18 @@ export const createAppointment = async (req: Request, res: Response) => {
 	}
 };
 
+/** ===============================
+ * UPDATE APPOINTMENT
+ * =============================== */
 export const updateAppointment = async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const updates = req.body;
 
+		if (updates.isTemporary === false) {
+			updates.$unset = { expiresAt: "" };
+		}
+		
 		const updated = await AppointmentModel.findByIdAndUpdate(id, updates, { new: true });
 		if (!updated) return res.status(404).json({ message: "Appointment not found" });
 
@@ -96,14 +107,18 @@ export const updateAppointment = async (req: Request, res: Response) => {
 	}
 };
 
+/** ===============================
+ * APPROVE / CANCEL / COMPLETE / RESCHEDULE
+ * =============================== */
 export const approveAppointment = async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
-
 		const appointment = await AppointmentModel.findById(id);
 		if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
 		appointment.status = "Approved";
+		appointment.isTemporary = false; // ✅ mark as final
+		appointment.expiresAt = undefined; // prevent TTL deletion
 		await appointment.save();
 
 		res.status(200).json({ message: "Appointment approved", appointment });
@@ -115,7 +130,6 @@ export const approveAppointment = async (req: Request, res: Response) => {
 export const cancelAppointment = async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
-
 		const appointment = await AppointmentModel.findById(id);
 		if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
@@ -123,6 +137,24 @@ export const cancelAppointment = async (req: Request, res: Response) => {
 		await appointment.save();
 
 		res.status(200).json({ message: "Appointment cancelled", appointment });
+	} catch (error: any) {
+		res.status(500).json({ message: error.message });
+	}
+};
+
+export const completeAppointment = async (req: Request, res: Response) => {
+	try {
+		const { id } = req.params;
+		const appointment = await AppointmentModel.findById(id);
+		if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+
+		if (!["Approved", "Rescheduled"].includes(appointment.status))
+			return res.status(400).json({ message: "Only approved appointments can be completed" });
+
+		appointment.status = "Completed";
+		await appointment.save();
+
+		res.status(200).json({ message: "Appointment marked as completed", appointment });
 	} catch (error: any) {
 		res.status(500).json({ message: error.message });
 	}
@@ -145,9 +177,6 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
 		const settings = await SpaSettingsModel.findOne();
 		if (!settings) return res.status(500).json({ message: "Settings not configured" });
 
-		if (date < new Date().toISOString().split('T')[0])
-			return res.status(400).json({ message: "Cannot reschedule to a past date" });
-
 		const startMin = toMinutes(startTime);
 		const endMin = startMin + service.duration;
 		const openMin = toMinutes(settings.openingTime);
@@ -158,7 +187,6 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
 
 		const endTime = toHHMM(endMin);
 
-		// Check overlapping slots
 		const overlapCount = await AppointmentModel.countDocuments({
 			date,
 			status: { $in: ["Approved", "Rescheduled"] },
@@ -170,11 +198,11 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
 		if (overlapCount >= settings.totalRooms)
 			return res.status(400).json({ message: "All rooms booked for that slot" });
 
-		if (notes) appointment.notes = notes;
 		appointment.date = date;
 		appointment.startTime = startTime;
 		appointment.endTime = endTime;
 		appointment.status = "Rescheduled";
+		if (notes) appointment.notes = notes;
 		await appointment.save();
 
 		res.status(200).json({ message: "Appointment rescheduled successfully", appointment });
@@ -183,30 +211,13 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
 	}
 };
 
-export const completeAppointment = async (req: Request, res: Response) => {
-	try {
-		const { id } = req.params;
-
-		const appointment = await AppointmentModel.findById(id);
-		if (!appointment) return res.status(404).json({ message: "Appointment not found" });
-
-		if (appointment.status !== "Approved" && appointment.status !== "Rescheduled") {
-			return res.status(400).json({ message: "Only approved appointments can be marked as completed" });
-		}
-
-		appointment.status = "Completed";
-		await appointment.save();
-
-		res.status(200).json({ message: "Appointment marked as completed", appointment });
-	} catch (error: any) {
-		res.status(500).json({ message: error.message });
-	}
-};
-
+/** ===============================
+ * GETTERS
+ * =============================== */
 export const getAppointments = async (req: Request, res: Response) => {
 	try {
 		const { status, date, clientId } = req.query;
-		const filter: Record<string, any> = {};
+		const filter: Record<string, any> = { isTemporary: false };
 
 		if (status) filter.status = status;
 		if (date) filter.date = new Date(date as string);
@@ -225,14 +236,11 @@ export const getAppointments = async (req: Request, res: Response) => {
 export const getAppointmentById = async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
-
 		const appointment = await AppointmentModel.findById(id)
 			.populate("clientId", "firstname lastname email phone")
 			.populate("serviceId", "name price duration category");
 
-		if (!appointment) {
-			return res.status(404).json({ message: "Appointment not found" });
-		}
+		if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
 		res.status(200).json({ appointment });
 	} catch (error: any) {
@@ -243,15 +251,13 @@ export const getAppointmentById = async (req: Request, res: Response) => {
 export const getClientAppointments = async (req: Request, res: Response) => {
 	try {
 		const { clientId } = req.params;
-
-		const appointments = await AppointmentModel.find({ clientId })
+		const appointments = await AppointmentModel.find({ clientId, isTemporary: false })
 			.populate("serviceId", "name price duration category status")
 			.populate("payments")
 			.sort({ date: -1 });
 
-		if (!appointments.length) {
+		if (!appointments.length)
 			return res.status(404).json({ message: "No appointments found for this client" });
-		}
 
 		res.status(200).json({ count: appointments.length, appointments });
 	} catch (error: any) {
@@ -259,6 +265,9 @@ export const getClientAppointments = async (req: Request, res: Response) => {
 	}
 };
 
+/** ===============================
+ * DELETE TEMPORARY
+ * =============================== */
 export const deleteTemporaryAppointment = async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;

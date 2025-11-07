@@ -9,6 +9,7 @@ export interface IAppointment extends Document {
 	status: "Pending" | "Approved" | "Cancelled" | "Rescheduled" | "Completed";
 	notes?: string;
 	isTemporary: boolean;
+	expiresAt?: Date;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -30,10 +31,12 @@ const AppointmentSchema = new Schema<IAppointment>(
 			type: Boolean,
 			default: false,
 		},
+		expiresAt: { type: Date, required: false }
 	},
 	{ timestamps: true, collection: "appointments" }
 );
 
+AppointmentSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 AppointmentSchema.index({ date: 1, startTime: 1, endTime: 1 });
 
 AppointmentSchema.virtual("payments", {
