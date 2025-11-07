@@ -5,15 +5,11 @@ import { ServiceModel } from "../schema/service";
 import { SpaSettingsModel } from "../schema/settings";
 import { toHHMM, toMinutes } from "../helpers/timeUtils";
 
-// 🕒 1 hour = 3600000 ms (adjust as needed)
-const TEMP_APPT_LIFETIME_MS = 2 * 60 * 1000;
+const TEMP_APPT_LIFETIME_MS = 10 * 60 * 1000; // 10 minutes in milliseconds 
 
-/** ===============================
- * CREATE APPOINTMENT
- * =============================== */
 export const createAppointment = async (req: Request, res: Response) => {
 	try {
-		const { clientId, serviceId, date, startTime, notes, isTemporary = false } = req.body;
+		const { clientId, serviceId, date, startTime, notes, isTemporary } = req.body;
 
 		if (!clientId || !serviceId || !date || !startTime)
 			return res.status(400).json({ message: "Missing required fields" });
@@ -41,6 +37,7 @@ export const createAppointment = async (req: Request, res: Response) => {
 		if (date < new Date().toISOString().split("T")[0])
 			return res.status(400).json({ message: "Cannot book an appointment in the past" });
 
+		// Compute time bounds
 		const startMin = toMinutes(startTime);
 		const endMin = startMin + service.duration;
 		const openMin = toMinutes(settings.openingTime);
@@ -51,15 +48,15 @@ export const createAppointment = async (req: Request, res: Response) => {
 
 		const endTime = toHHMM(endMin);
 
-		// Check for overlapping approved/rescheduled appointments
-		const overlappingCount = await AppointmentModel.countDocuments({
+		// Count overlapping appointments for room availability
+		const existingAppointments = await AppointmentModel.countDocuments({
 			date,
 			status: { $in: ["Approved", "Rescheduled"] },
 			startTime: { $lt: endTime },
 			endTime: { $gt: startTime },
 		});
 
-		if (overlappingCount >= settings.totalRooms)
+		if (existingAppointments >= settings.totalRooms)
 			return res.status(400).json({ message: "All rooms are booked for this time slot" });
 
 		const appointmentData: any = {
@@ -73,7 +70,7 @@ export const createAppointment = async (req: Request, res: Response) => {
 			isTemporary,
 		};
 
-		// ✅ If temporary, set expiresAt for TTL cleanup
+		// If temporary, set expiresAt for TTL cleanup
 		if (isTemporary) {
 			appointmentData.expiresAt = new Date(Date.now() + TEMP_APPT_LIFETIME_MS);
 		}
@@ -86,9 +83,6 @@ export const createAppointment = async (req: Request, res: Response) => {
 	}
 };
 
-/** ===============================
- * UPDATE APPOINTMENT
- * =============================== */
 export const updateAppointment = async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
@@ -107,9 +101,6 @@ export const updateAppointment = async (req: Request, res: Response) => {
 	}
 };
 
-/** ===============================
- * APPROVE / CANCEL / COMPLETE / RESCHEDULE
- * =============================== */
 export const approveAppointment = async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
@@ -117,7 +108,7 @@ export const approveAppointment = async (req: Request, res: Response) => {
 		if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
 		appointment.status = "Approved";
-		appointment.isTemporary = false; // ✅ mark as final
+		appointment.isTemporary = false; // mark as final
 		appointment.expiresAt = undefined; // prevent TTL deletion
 		await appointment.save();
 
@@ -142,24 +133,6 @@ export const cancelAppointment = async (req: Request, res: Response) => {
 	}
 };
 
-export const completeAppointment = async (req: Request, res: Response) => {
-	try {
-		const { id } = req.params;
-		const appointment = await AppointmentModel.findById(id);
-		if (!appointment) return res.status(404).json({ message: "Appointment not found" });
-
-		if (!["Approved", "Rescheduled"].includes(appointment.status))
-			return res.status(400).json({ message: "Only approved appointments can be completed" });
-
-		appointment.status = "Completed";
-		await appointment.save();
-
-		res.status(200).json({ message: "Appointment marked as completed", appointment });
-	} catch (error: any) {
-		res.status(500).json({ message: error.message });
-	}
-};
-
 export const rescheduleAppointment = async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
@@ -176,6 +149,9 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
 
 		const settings = await SpaSettingsModel.findOne();
 		if (!settings) return res.status(500).json({ message: "Settings not configured" });
+
+		if (date < new Date().toISOString().split('T')[0])
+			return res.status(400).json({ message: "Cannot reschedule to a past date" });
 
 		const startMin = toMinutes(startTime);
 		const endMin = startMin + service.duration;
@@ -198,11 +174,11 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
 		if (overlapCount >= settings.totalRooms)
 			return res.status(400).json({ message: "All rooms booked for that slot" });
 
+		if (notes) appointment.notes = notes;
 		appointment.date = date;
 		appointment.startTime = startTime;
 		appointment.endTime = endTime;
 		appointment.status = "Rescheduled";
-		if (notes) appointment.notes = notes;
 		await appointment.save();
 
 		res.status(200).json({ message: "Appointment rescheduled successfully", appointment });
@@ -211,9 +187,24 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
 	}
 };
 
-/** ===============================
- * GETTERS
- * =============================== */
+export const completeAppointment = async (req: Request, res: Response) => {
+	try {
+		const { id } = req.params;
+		const appointment = await AppointmentModel.findById(id);
+		if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+
+		if (!["Approved", "Rescheduled"].includes(appointment.status))
+			return res.status(400).json({ message: "Only approved appointments can be completed" });
+
+		appointment.status = "Completed";
+		await appointment.save();
+
+		res.status(200).json({ message: "Appointment marked as completed", appointment });
+	} catch (error: any) {
+		res.status(500).json({ message: error.message });
+	}
+};
+
 export const getAppointments = async (req: Request, res: Response) => {
 	try {
 		const { status, date, clientId } = req.query;
@@ -265,9 +256,6 @@ export const getClientAppointments = async (req: Request, res: Response) => {
 	}
 };
 
-/** ===============================
- * DELETE TEMPORARY
- * =============================== */
 export const deleteTemporaryAppointment = async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;

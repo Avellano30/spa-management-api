@@ -10,8 +10,6 @@ export interface IAppointment extends Document {
 	notes?: string;
 	isTemporary: boolean;
 	expiresAt?: Date;
-	createdAt: Date;
-	updatedAt: Date;
 }
 
 const AppointmentSchema = new Schema<IAppointment>(
@@ -53,18 +51,3 @@ export const AppointmentModel = mongoose.model<IAppointment>(
 	"Appointment",
 	AppointmentSchema
 );
-
-export const getAppointments = () =>
-	AppointmentModel.find().populate("clientId serviceId");
-
-export const getAppointmentById = (id: string) =>
-	AppointmentModel.findById(id).populate("clientId serviceId");
-
-export const createAppointment = (values: Record<string, any>) =>
-	new AppointmentModel(values).save();
-
-export const updateAppointmentById = (id: string, values: Record<string, any>) =>
-	AppointmentModel.findByIdAndUpdate(id, values, { new: true });
-
-export const deleteAppointmentById = (id: string) =>
-	AppointmentModel.findByIdAndDelete(id);
