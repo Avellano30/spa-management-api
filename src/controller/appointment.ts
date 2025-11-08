@@ -216,7 +216,7 @@ export const getAppointments = async (req: Request, res: Response) => {
 
 		const appointments = await AppointmentModel.find(filter)
 			.populate("clientId", "firstname lastname email phone")
-			.populate("serviceId", "name price duration category");
+			.populate("serviceId", "name description price duration category imageUrl")
 
 		res.status(200).json({ count: appointments.length, appointments });
 	} catch (error: any) {
@@ -229,7 +229,7 @@ export const getAppointmentById = async (req: Request, res: Response) => {
 		const { id } = req.params;
 		const appointment = await AppointmentModel.findById(id)
 			.populate("clientId", "firstname lastname email phone")
-			.populate("serviceId", "name price duration category");
+			.populate("serviceId", "name description price duration category imageUrl")
 
 		if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
@@ -243,7 +243,7 @@ export const getClientAppointments = async (req: Request, res: Response) => {
 	try {
 		const { clientId } = req.params;
 		const appointments = await AppointmentModel.find({ clientId, isTemporary: false })
-			.populate("serviceId", "name price duration category status")
+			.populate("serviceId", "name description price duration category imageUrl")
 			.populate("payments")
 			.sort({ date: -1 });
 
