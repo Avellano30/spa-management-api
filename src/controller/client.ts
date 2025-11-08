@@ -137,7 +137,7 @@ export const clientSignUp = async (req: Request, res: Response) => {
             const sessionToken = jwt.sign({ userId: user._id }, `${process.env.SECRET_KEY}`, { expiresIn: '3h' });
             user.authentication.sessionToken = sessionToken;
 
-            return res.status(200).json({ token: sessionToken, firstname: user.firstname, lastname: user.lastname, email: user.email });
+            return res.status(200).json({ token: sessionToken, firstName: user.firstname, lastName: user.lastname, email: user.email });
         }
     } catch (err) {
         console.error(err);
