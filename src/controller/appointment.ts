@@ -217,6 +217,8 @@ export const getAppointments = async (req: Request, res: Response) => {
 		const appointments = await AppointmentModel.find(filter)
 			.populate("clientId", "firstname lastname email phone")
 			.populate("serviceId", "name description price duration category imageUrl")
+            .populate("payments")
+            .sort({ createdAt: -1 });
 
 		res.status(200).json({ count: appointments.length, appointments });
 	} catch (error: any) {
