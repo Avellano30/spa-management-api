@@ -59,6 +59,20 @@ export const createAppointment = async (req: Request, res: Response) => {
 		if (existingAppointments >= settings.totalRooms)
 			return res.status(400).json({ message: "All rooms are booked for this time slot" });
 
+        const clientOverlap = await AppointmentModel.countDocuments({
+            clientId,
+            date,
+            status: { $in: ["Approved", "Rescheduled", "Pending"] },
+            startTime: { $lt: endTime },
+            endTime: { $gt: startTime },
+        });
+
+        if (clientOverlap > 0) {
+            return res.status(400).json({
+                message: "Client already has an approved/rescheduled appointment overlapping this time",
+            });
+        }
+
 		const appointmentData: any = {
 			clientId,
 			serviceId,
@@ -173,6 +187,21 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
 
 		if (overlapCount >= settings.totalRooms)
 			return res.status(400).json({ message: "All rooms booked for that slot" });
+
+        const clientOverlap = await AppointmentModel.countDocuments({
+            clientId: appointment.clientId,
+            date,
+            status: { $in: ["Approved", "Rescheduled", "Pending"] },
+            _id: { $ne: id },
+            startTime: { $lt: endTime },
+            endTime: { $gt: startTime },
+        });
+
+        if (clientOverlap > 0) {
+            return res.status(400).json({
+                message: "Client already has an approved/rescheduled appointment overlapping the requested time",
+            });
+        }
 
 		if (notes) appointment.notes = notes;
 		appointment.date = date;
