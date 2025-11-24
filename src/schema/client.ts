@@ -12,6 +12,8 @@ export interface IClient extends Document {
 		salt?: string;
 		sessionToken?: string;
 	};
+	resetPasswordToken?: string;
+	resetPasswordExpires?: Date;
 }
 
 const ClientSchema = new Schema<IClient>(
@@ -27,6 +29,8 @@ const ClientSchema = new Schema<IClient>(
 			salt: { type: String, select: false },
 			sessionToken: { type: String, select: false },
 		},
+		resetPasswordToken: { type: String, select: false },
+		resetPasswordExpires: { type: Date, select: false },
 	},
 	{ timestamps: true }
 );
