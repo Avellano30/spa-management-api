@@ -1,9 +1,18 @@
 import { Request, Response } from "express";
 import { ClientModel } from "../schema/client";
-import { Resend } from "resend";
 import crypto from "crypto";
+import nodemailer from "nodemailer";
+import SMTPTransport from "nodemailer/lib/smtp-transport";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST!,
+  port: Number(process.env.SMTP_PORT!),
+  secure: Number(process.env.SMTP_PORT) === 465, // true for 465, false for others
+  auth: {
+    user: process.env.SMTP_USER!,
+    pass: process.env.SMTP_PASS!,
+  },
+} as SMTPTransport.Options);
 
 // ------------------------------
 // UTILITIES
@@ -77,8 +86,8 @@ export const sendResetPasswordEmail = async (email: string, name: string, link: 
 `;
 
 
-  await resend.emails.send({
-    from: "delivered+password-reset@resend.dev",
+  await transporter.sendMail({
+    from: "eliaschan989@gmail.com",
     to: email,
     subject: "Reset Your Password",
     html,
