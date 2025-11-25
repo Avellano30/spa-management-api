@@ -60,7 +60,7 @@ export const validateResetToken = async (token: string) => {
 export const sendResetPasswordEmail = async (email: string, name: string, link: string) => {
   const html = `
   <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
-    <h2 style="color: #e50914; text-align: center;">Hello ${name},</h2>
+    <h2 style="color: #1c7ed6; text-align: center;">Hello ${name},</h2>
     <p style="font-size: 16px; line-height: 1.5; color: #333;">
       You requested a password reset for your SPA account.
     </p>
@@ -70,7 +70,7 @@ export const sendResetPasswordEmail = async (email: string, name: string, link: 
     <div style="text-align: center; margin: 20px 0;">
       <a 
         href="${link}" 
-        style="display: inline-block; padding: 12px 20px; background-color: #3b82f6; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 6px; font-size: 16px;"
+        style="display: inline-block; padding: 12px 20px; background-color: #1c7ed6; color: #ffffff; font-weight: bold; text-decoration: none; border-radius: 6px; font-size: 16px;"
       >
         Reset Password
       </a>
