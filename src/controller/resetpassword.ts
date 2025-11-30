@@ -44,12 +44,11 @@ export const validateResetToken = async (token: string) => {
 };
 
 // ------------------------------
-// EMAIL SENDER USING RESEND
+// EMAIL SENDER USING BREVO
 // ------------------------------
 
 export const sendResetPasswordEmail = async (email: string, name: string, link: string) => {
   const html = ResetPasswordEmail({ name, link });
-
 
   await transporter.sendMail({
     from: "eliaschan989@gmail.com",
