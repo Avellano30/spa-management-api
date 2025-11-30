@@ -1,13 +1,13 @@
-// src/controllers/emailVerificationController.ts
 import { Request, Response } from "express";
 import crypto from "crypto";
 import { ClientModel } from "../schema/client";
 import { transporter } from "../config/nodemailer";
+import { EmailVerification } from "../templates/email/emailVerification";
 
 /**
- * Send verification email to user
+ * Resend verification email to user
  */
-export const sendVerificationEmail = async (req: Request, res: Response) => {
+export const resendVerificationEmail = async (req: Request, res: Response) => {
 	const { email } = req.body;
 
 	if (!email) return res.status(400).json({ message: "Email is required" });
@@ -25,19 +25,13 @@ export const sendVerificationEmail = async (req: Request, res: Response) => {
 	await user.save();
 
 	// Construct verification link
-	const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}&email=${email}`;
+	const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
 
 	const mailOptions = {
-		from: `"Serenity Spa" <${process.env.SMTP_USER}>`,
+		from: "eliaschan989@gmail.com",
 		to: email,
 		subject: "Verify Your Email",
-		html: `
-			<h2>Email Verification</h2>
-			<p>Hi ${user.firstname},</p>
-			<p>Click the link below to verify your email:</p>
-			<a href="${verificationUrl}">${verificationUrl}</a>
-			<p>This link expires in 24 hours.</p>
-		`,
+		html: EmailVerification({ name: user.firstname, link: verificationUrl }),
 	};
 
 	try {
@@ -53,12 +47,11 @@ export const sendVerificationEmail = async (req: Request, res: Response) => {
  * Verify user's email
  */
 export const verifyEmail = async (req: Request, res: Response) => {
-	const { token, email } = req.query;
-
-	if (!token || !email) return res.status(400).json({ message: "Invalid request" });
+	const { token } = req.params;
+	console.log("Verification token:", token);
+	if (!token) return res.status(400).json({ message: "Invalid request" });
 
 	const user = await ClientModel.findOne({
-		email: email as string,
 		verificationToken: token as string,
 		verificationExpires: { $gt: new Date() }, // token not expired
 	});
