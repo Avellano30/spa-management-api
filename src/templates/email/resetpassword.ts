@@ -1,5 +1,3 @@
-// src/templates/email/resetPassword.ts
-
 export interface ResetPasswordEmailProps {
   name: string;
   link: string;
