@@ -133,18 +133,25 @@ export const approveAppointment = async (req: Request, res: Response) => {
 };
 
 export const cancelAppointment = async (req: Request, res: Response) => {
-	try {
-		const { id } = req.params;
-		const appointment = await AppointmentModel.findById(id);
-		if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
 
-		appointment.status = "Cancelled";
-		await appointment.save();
+    if (!notes || notes.trim() === "") {
+      return res.status(400).json({ message: "Cancellation notes are required." });
+    }
 
-		res.status(200).json({ message: "Appointment cancelled", appointment });
-	} catch (error: any) {
-		res.status(500).json({ message: error.message });
-	}
+    const appointment = await AppointmentModel.findById(id);
+    if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+
+    appointment.status = "Cancelled";
+    appointment.notes = notes;
+    await appointment.save();
+
+    res.status(200).json({ message: "Appointment cancelled", appointment });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const rescheduleAppointment = async (req: Request, res: Response) => {
