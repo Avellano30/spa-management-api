@@ -53,12 +53,12 @@ export const clientSignIn = async (req: Request, res: Response) => {
                 // Send verification email
                 const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(gmail)}`;
 
-                await transporter.sendMail({
-                    from: "eliaschan989@gmail.com",
-                    to: gmail,
-                    subject: "Verify Your Email",
-                    html: EmailVerification({ name: decoded.given_name, link: verificationLink }),
-                });
+                // await transporter.sendMail({
+                //     from: "eliaschan989@gmail.com",
+                //     to: gmail,
+                //     subject: "Verify Your Email",
+                //     html: EmailVerification({ name: decoded.given_name, link: verificationLink }),
+                // });
 
                 return res.status(200).json({
                     redirect: "/email-verification?email=" + encodeURIComponent(gmail),
@@ -69,6 +69,7 @@ export const clientSignIn = async (req: Request, res: Response) => {
             // Check verification
             if (!user.verified) {
                 return res.status(403).json({
+                    redirect: "/email-verification?email=" + encodeURIComponent(gmail),
                     message: "Email not verified. Please check your inbox to verify your email.",
                 });
             }
@@ -172,12 +173,12 @@ export const clientSignUp = async (req: Request, res: Response) => {
         // Send verification email
         const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
 
-        await transporter.sendMail({
-            from: "eliaschan989@gmail.com",
-            to: email,
-            subject: "Verify Your Email",
-            html: EmailVerification({ name: firstname, link: verificationLink }),
-        });
+        // await transporter.sendMail({
+        //     from: "eliaschan989@gmail.com",
+        //     to: email,
+        //     subject: "Verify Your Email",
+        //     html: EmailVerification({ name: firstname, link: verificationLink }),
+        // });
 
         return res.status(200).json({
             redirect: "/email-verification?email=" + encodeURIComponent(email),
