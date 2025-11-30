@@ -48,7 +48,7 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
  */
 export const verifyEmail = async (req: Request, res: Response) => {
 	const { token } = req.params;
-	console.log("Verification token:", token);
+
 	if (!token) return res.status(400).json({ message: "Invalid request" });
 
 	const user = await ClientModel.findOne({
