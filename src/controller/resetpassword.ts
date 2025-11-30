@@ -1,19 +1,8 @@
 import { Request, Response } from "express";
 import { ClientModel } from "../schema/client";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
-import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { ResetPasswordEmail } from "../templates/email/resetpassword";
-
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST!,
-  port: Number(process.env.SMTP_PORT!),
-  secure: Number(process.env.SMTP_PORT) === 465, // true for 465, false for others
-  auth: {
-    user: process.env.SMTP_USER!,
-    pass: process.env.SMTP_PASS!,
-  },
-} as SMTPTransport.Options);
+import { transporter } from "../config/nodemailer";
 
 // ------------------------------
 // UTILITIES

@@ -14,6 +14,9 @@ export interface IClient extends Document {
 	};
 	resetPasswordToken?: string;
 	resetPasswordExpires?: Date;
+	verified: boolean;
+	verificationToken?: string;
+	verificationExpires?: Date;
 }
 
 const ClientSchema = new Schema<IClient>(
@@ -31,6 +34,9 @@ const ClientSchema = new Schema<IClient>(
 		},
 		resetPasswordToken: { type: String, select: false },
 		resetPasswordExpires: { type: Date, select: false },
+		verified: { type: Boolean, default: false },
+		verificationToken: { type: String, select: false },
+		verificationExpires: { type: Date, select: false },
 	},
 	{ timestamps: true }
 );
