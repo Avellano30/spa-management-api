@@ -104,17 +104,6 @@ export const stripeWebhook = async (req: Request, res: Response) => {
     res.json({received: true});
 };
 
-const updateAppointmentStatus = async (appointmentId: string, type: string) => {
-    const statusMap: Record<string, string> = {
-        Downpayment: "Approved",
-        Full: "Approved",
-        Balance: "Completed",
-        Refund: "Cancelled",
-    };
-    const status = statusMap[type];
-    if (status) await AppointmentModel.findByIdAndUpdate(appointmentId, {status});
-};
-
 export const createCashPayment = async (req: Request, res: Response) => {
     try {
         const {appointmentId, type, amount, remarks} = req.body;
@@ -138,8 +127,6 @@ export const createCashPayment = async (req: Request, res: Response) => {
             transactionId,
             remarks: remarks || "",
         });
-
-        await updateAppointmentStatus(appointmentId, type);
 
         res.status(201).json({
             message: "Cash payment recorded successfully",
