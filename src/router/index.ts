@@ -5,8 +5,8 @@ import service from './service';
 import appointment from './appointment';
 import settings from './settings';
 import payment from './payment';
-import resetPassword from './resetPassword';
 import emailVerification from './emailVerification';
+import resetPassword from './resetPassword';
 
 const router = express.Router();
 
