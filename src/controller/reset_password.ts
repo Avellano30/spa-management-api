@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { ClientModel } from "../schema/client";
 import crypto from "crypto";
 import { transporter } from "../config/nodemailer";
-import { ResetPasswordEmail } from "../templates/email/resetPassword";
+import { ResetPasswordEmail } from "../templates/email/reset_password";
 
 // ------------------------------
 // UTILITIES

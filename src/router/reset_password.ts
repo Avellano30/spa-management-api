@@ -1,5 +1,5 @@
 import express from 'express';
-import { requestPasswordReset, resetPassword, verifyResetPasswordToken } from '../controller/ResetPassword';
+import { requestPasswordReset, resetPassword, verifyResetPasswordToken } from '../controller/reset_password';
 
 export default (router: express.Router) => {
     router.post("/password-reset", requestPasswordReset);

@@ -6,7 +6,7 @@ import appointment from './appointment';
 import settings from './settings';
 import payment from './payment';
 import emailVerification from './emailVerification';
-import resetPassword from './resetPassword';
+import reset_password from './reset_password';
 
 const router = express.Router();
 
@@ -17,7 +17,7 @@ export default (): express.Router => {
     appointment(router);
     settings(router);
     payment(router);
-    resetPassword(router);
+    reset_password(router);
     emailVerification(router);
     
     return router;
