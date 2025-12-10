@@ -1,5 +1,5 @@
 import express from 'express';
-import { resendVerificationEmail, verifyEmail } from '../controller/emailverification';
+import { resendVerificationEmail, verifyEmail } from '../controller/emailVerification';
 
 export default (router: express.Router) => {
     router.post("/resend-verification", resendVerificationEmail);
