@@ -28,7 +28,7 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
 	const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
 
 	const mailOptions = {
-		from: "eliaschan989@gmail.com",
+		from: process.env.SMTP_FROM,
 		to: email,
 		subject: "Verify Your Email",
 		html: EmailVerification({ name: user.firstname, link: verificationUrl }),
