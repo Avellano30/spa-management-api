@@ -7,6 +7,7 @@ import settings from './settings';
 import payment from './payment';
 import emailVerification from './emailVerification';
 import reset_password from './reset_password';
+import homepage from "./homepage";
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ export default (): express.Router => {
     payment(router);
     reset_password(router);
     emailVerification(router);
-    
+    homepage(router);
+
     return router;
 }
