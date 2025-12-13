@@ -4,10 +4,17 @@ import { toMinutes } from "../helpers/timeUtils";
 
 export const getSpaSettings = async (req: Request, res: Response) => {
     try {
-        const settings = await SpaSettingsModel.findOne();
+        let settings = await SpaSettingsModel.findOne();
+
         if (!settings) {
-            return res.status(404).json({ message: "Spa settings not configured" });
+            settings = await SpaSettingsModel.create({
+                totalRooms: 1,
+                downPayment: 30,
+                openingTime: "09:00",
+                closingTime: "20:00",
+            });
         }
+
         res.status(200).json(settings);
     } catch (error: any) {
         res.status(500).json({ message: error.message });
@@ -22,12 +29,13 @@ export const createSpaSettings = async (req: Request, res: Response) => {
             return res.status(400).json({ message: "Settings already exist" });
         }
 
-        const { totalRooms, openingTime, closingTime } = req.body;
+        const { totalRooms, openingTime, closingTime, downPayment } = req.body;
 
         const newSettings = await SpaSettingsModel.create({
             totalRooms,
             openingTime,
             closingTime,
+            downPayment: downPayment ?? 30,
         });
 
         res.status(201).json(newSettings);
@@ -38,15 +46,19 @@ export const createSpaSettings = async (req: Request, res: Response) => {
 
 export const updateSpaSettings = async (req: Request, res: Response) => {
     try {
-        const { totalRooms, openingTime, closingTime } = req.body;
+        const { totalRooms, openingTime, closingTime, downPayment } = req.body;
 
         if (totalRooms !== undefined && totalRooms < 1)
             return res.status(400).json({ message: "Total rooms must be at least 1" });
+
+        if (downPayment !== undefined && (downPayment < 1 || downPayment > 100))
+            return res.status(400).json({ message: "Downpayment must be between 1 and 100" });
 
         const existingSettings =
             (await SpaSettingsModel.findOne()) ||
             (await SpaSettingsModel.create({
                 totalRooms: 1,
+                downPayment: 30,
                 openingTime: "09:00",
                 closingTime: "20:00",
             }));
@@ -73,6 +85,7 @@ export const updateSpaSettings = async (req: Request, res: Response) => {
         if (totalRooms !== undefined) updateData.totalRooms = totalRooms;
         if (openingTime) updateData.openingTime = openingTime;
         if (closingTime) updateData.closingTime = closingTime;
+        if (downPayment !== undefined) updateData.downPayment = downPayment;
 
         const updatedSettings = await SpaSettingsModel.findOneAndUpdate(
             {},

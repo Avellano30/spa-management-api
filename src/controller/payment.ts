@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import {AppointmentModel} from "../schema/appointment";
 import {PaymentModel} from "../schema/payment";
 import {randomBytes} from "crypto";
+import {SpaSettingsModel} from "../schema/settings";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
@@ -12,12 +13,15 @@ export const createPaymentSession = async (req: Request, res: Response) => {
         const appointment = await AppointmentModel.findById(appointmentId).populate("serviceId");
         if (!appointment) return res.status(404).json({message: "Appointment not found"});
 
+        const settings = await SpaSettingsModel.findOne();
+        if (!settings) return res.status(404).json({message: "Settings for downpayment not found"});
+
         const service = appointment.serviceId as any;
         const totalPrice = service.price;
 
         // Determine payment amount
         let amount = totalPrice;
-        if (type === "Downpayment") amount = totalPrice * 0.3; // 30% downpayment
+        if (type === "Downpayment") amount = totalPrice * (settings.downPayment / 100); // 30% default downpayment
         else if (type === "Balance") {
             // compute remaining balance based on total paid
             const payments = await PaymentModel.find({appointmentId, status: "Completed"});
