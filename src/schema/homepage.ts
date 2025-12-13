@@ -25,7 +25,7 @@ const HomepageSchema = new Schema<IHomepage>(
         brand: {
             name: { type: String, required: true },
             logoUrl: { type: String },
-            logoPublicId: { type: String }, // Add field for Cloudinary public ID
+            logoPublicId: { type: String },
         },
         contact: {
             email: { type: String, required: true },
@@ -33,9 +33,9 @@ const HomepageSchema = new Schema<IHomepage>(
             address: { type: String },
         },
         content: {
-            heading: { type: String, default: "Welcome to MyApp" },
-            description: { type: String, default: "Your tagline goes here." },
-            bodyDescription: { type: String, default: "Detailed description of your app or service." },
+            heading: { type: String },
+            description: { type: String },
+            bodyDescription: { type: String },
         },
     },
     { timestamps: true, collection: "homepage_settings" }
