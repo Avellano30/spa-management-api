@@ -77,7 +77,7 @@ export const clientSignIn = async (req: Request, res: Response) => {
             // Generate a JWT session token
             const sessionToken = jwt.sign({ userId: user._id }, `${process.env.SECRET_KEY}`, { expiresIn: '3h' });
 
-            return res.status(200).json({ token: sessionToken, firstName: user.firstname, lastName: user.lastname, email: user.email });
+            return res.status(200).json({ token: sessionToken, userId: user._id, firstName: user.firstname, lastName: user.lastname, email: user.email });
         } catch (error) {
             console.error('Error exchanging code for tokens:', error);
             return res.status(400).json({
@@ -115,7 +115,7 @@ export const clientSignIn = async (req: Request, res: Response) => {
 
                 await user.save();
 
-                return res.status(200).json({ token: sessionToken, firstName: user.firstname, lastName: user.lastname, email: user.email });
+                return res.status(200).json({ token: sessionToken, userId: user._id, firstName: user.firstname, lastName: user.lastname, email: user.email });
             } else {
                 return res.sendStatus(406);
             }

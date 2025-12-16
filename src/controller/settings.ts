@@ -69,16 +69,12 @@ export const updateSpaSettings = async (req: Request, res: Response) => {
         const openTime = toMinutes(newOpeningTime);
         const closeTime = toMinutes(newClosingTime);
 
-        // Validate relationship between new open/close times
-        if (openTime >= closeTime)
-            return res
-                .status(400)
-                .json({ message: "Opening time must be earlier than closing time" });
+        const duration = closeTime > openTime
+            ? closeTime - openTime
+            : 24 * 60 - openTime + closeTime;
 
-        if (closeTime - openTime < 60)
-            return res
-                .status(400)
-                .json({ message: "Operating hours must be at least 1 hour long" });
+        if (duration < 60)
+            return res.status(400).json({ message: "Operating hours must be at least 1 hour long" });
 
         // Build the update object dynamically
         const updateData: Record<string, any> = {};
