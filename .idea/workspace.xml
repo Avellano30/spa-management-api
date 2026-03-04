@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="Support overnight operating hours">
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="TypeScript File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Avellano30&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Avellano30/spa-management-api.git&quot;,
+    &quot;accountId&quot;: &quot;64a79e2b-d6cd-43bc-a58a-6163080637c3&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 1
+}</component>
+  <component name="ProjectId" id="34pKrVguxuTw4T0leTngDPPQdPx" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;JavaScript Debug.localhost:3000.executor&quot;: &quot;Debug&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultAutoModeForALLUsers.v1&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/eliaschan/Workspace/spa-management-api&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;npm.dev.executor&quot;: &quot;Run&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/eliaschan/Workspace/spa-management-api/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+  </component>
+  <component name="RunManager" selected="JavaScript Debug.localhost:3000">
+    <configuration name="localhost:3000" type="JavascriptDebugType" temporary="true" nameIsGenerated="true" uri="http://localhost:3000">
+      <method v="2" />
+    </configuration>
+    <configuration name="dev" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="dev" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="JavaScript Debug.localhost:3000" />
+        <item itemvalue="npm.dev" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-3aa1da707db6-JavaScript-WS-252.27397.92" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="" />
+      <created>1761905271362</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1761905271362</updated>
+      <workItem from="1761905272521" duration="6425000" />
+      <workItem from="1762144293776" duration="886000" />
+      <workItem from="1762145188980" duration="55000" />
+      <workItem from="1762145257942" duration="9252000" />
+      <workItem from="1762335870843" duration="825000" />
+      <workItem from="1762588067335" duration="4301000" />
+      <workItem from="1762594844859" duration="5191000" />
+      <workItem from="1762673049452" duration="1916000" />
+      <workItem from="1762679732577" duration="602000" />
+      <workItem from="1762927986084" duration="7649000" />
+      <workItem from="1763101135533" duration="1609000" />
+      <workItem from="1763111570368" duration="8000" />
+      <workItem from="1763111612691" duration="261000" />
+      <workItem from="1763112378698" duration="26000" />
+      <workItem from="1763112457168" duration="55000" />
+      <workItem from="1763113386169" duration="3000" />
+      <workItem from="1763152767207" duration="7000" />
+      <workItem from="1763152800006" duration="31000" />
+      <workItem from="1763152909772" duration="372000" />
+      <workItem from="1763153406499" duration="1133000" />
+      <workItem from="1763284917752" duration="7868000" />
+      <workItem from="1763807091830" duration="6682000" />
+      <workItem from="1764108081069" duration="1789000" />
+      <workItem from="1764117489656" duration="2853000" />
+      <workItem from="1764144740986" duration="468000" />
+      <workItem from="1764145223704" duration="1553000" />
+      <workItem from="1764232560452" duration="122000" />
+      <workItem from="1764236411215" duration="26000" />
+      <workItem from="1764236439556" duration="89000" />
+      <workItem from="1764236531127" duration="278000" />
+      <workItem from="1764281477077" duration="39000" />
+      <workItem from="1764281521570" duration="146000" />
+      <workItem from="1764281672126" duration="828000" />
+      <workItem from="1764302831210" duration="109000" />
+      <workItem from="1764314328447" duration="57000" />
+      <workItem from="1764314436909" duration="469000" />
+      <workItem from="1764314912652" duration="1791000" />
+      <workItem from="1764491462321" duration="6464000" />
+      <workItem from="1764507395165" duration="5655000" />
+      <workItem from="1764573112650" duration="1245000" />
+      <workItem from="1764685183762" duration="4584000" />
+      <workItem from="1765326725217" duration="13539000" />
+      <workItem from="1765630071422" duration="10209000" />
+      <workItem from="1765694466103" duration="3154000" />
+      <workItem from="1767263698601" duration="515000" />
+      <workItem from="1769933988775" duration="1969000" />
+      <workItem from="1770938353940" duration="2759000" />
+      <workItem from="1770945492991" duration="3000" />
+      <workItem from="1770964062184" duration="1210000" />
+      <workItem from="1770977161557" duration="605000" />
+      <workItem from="1771572302858" duration="1758000" />
+      <workItem from="1771578878995" duration="2000" />
+      <workItem from="1771932258907" duration="876000" />
+      <workItem from="1772264938856" duration="1171000" />
+      <workItem from="1772433938229" duration="1912000" />
+      <workItem from="1772437736992" duration="1468000" />
+    </task>
+    <task id="LOCAL-00001" summary="Remove multer-storage-cloudinary due to conflict">
+      <option name="closed" value="true" />
+      <created>1762148897413</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1762148897413</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Fixed sign-up keys">
+      <option name="closed" value="true" />
+      <created>1762605022955</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1762605022955</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Show payments when retrieving all appointments">
+      <option name="closed" value="true" />
+      <created>1763031308914</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1763031308914</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Adjusted code to avoid double booking per client.">
+      <option name="closed" value="true" />
+      <created>1763299745251</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1763299745251</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Update email sender to get from env">
+      <option name="closed" value="true" />
+      <created>1765616915473</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1765616915473</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Added a new crud operation for updating homepage logo and app details.">
+      <option name="closed" value="true" />
+      <created>1765626133454</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1765626133454</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Remove default values for content in homepage settings">
+      <option name="closed" value="true" />
+      <created>1765633193256</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1765633193256</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Added downpayment in spa settings">
+      <option name="closed" value="true" />
+      <created>1765635700980</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1765635700980</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Support overnight operating hours">
+      <option name="closed" value="true" />
+      <created>1765879481508</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1765879481508</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Remove multer-storage-cloudinary due to conflict" />
+    <MESSAGE value="Fixed sign-up keys" />
+    <MESSAGE value="Show payments when retrieving all appointments" />
+    <MESSAGE value="Adjusted code to avoid double booking per client." />
+    <MESSAGE value="Update email sender to get from env" />
+    <MESSAGE value="Added a new crud operation for updating homepage logo and app details." />
+    <MESSAGE value="Remove default values for content in homepage settings" />
+    <MESSAGE value="Added downpayment in spa settings" />
+    <MESSAGE value="Support overnight operating hours" />
+    <option name="LAST_COMMIT_MESSAGE" value="Support overnight operating hours" />
+  </component>
+</project>

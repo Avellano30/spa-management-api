@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import compression from "compression";
 import cors from "cors";
 import router from "./router";
-import { stripeWebhook } from "./controller/payment";
+import { paymongoWebhook, stripeWebhook } from "./controller/payment";
 
 const app = express();
 
@@ -13,11 +13,10 @@ app.use(compression());
 app.use(cookieParser());
 
 // Stripe webhook needs the raw body to validate the signature
-app.post(
-  "/webhook",
-  express.raw({ type: "application/json" }),
-  stripeWebhook
-);
+app.post("/webhook", express.raw({ type: "application/json" }), stripeWebhook);
+
+// PayMongo webhook
+app.post("/paymongo-webhook", express.json(), paymongoWebhook);
 
 app.use(bodyParser.json());
 
