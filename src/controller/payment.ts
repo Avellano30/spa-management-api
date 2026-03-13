@@ -94,13 +94,18 @@ export const stripeWebhook = async (req: Request, res: Response) => {
     const { appointmentId, type } = session.metadata;
     const amount = session.amount_total / 100;
 
-    await PaymentModel.create({
+    const payment = await PaymentModel.create({
       appointmentId,
       amount,
       method: "Online",
       type,
       status: "Completed",
       transactionId: session.id,
+    });
+
+    // Add payment to appointment's payments array
+    await AppointmentModel.findByIdAndUpdate(appointmentId, {
+      $push: { payments: payment._id },
     });
 
     // Update appointment status based on type
@@ -143,6 +148,11 @@ export const createCashPayment = async (req: Request, res: Response) => {
       status: "Completed",
       transactionId,
       remarks: remarks || "",
+    });
+
+    // Add payment to appointment's payments array
+    await AppointmentModel.findByIdAndUpdate(appointmentId, {
+      $push: { payments: payment._id },
     });
 
     res.status(201).json({
@@ -260,13 +270,18 @@ export const paymongoWebhook = async (req: Request, res: Response) => {
     const metadata = session.attributes.metadata;
     const amount = session.attributes.amount / 100;
 
-    await PaymentModel.create({
+    const payment = await PaymentModel.create({
       appointmentId: metadata.appointmentId,
       amount,
       method: "Online",
       type: metadata.type,
       status: "Completed",
       transactionId: session.id,
+    });
+
+    // Add payment to appointment's payments array
+    await AppointmentModel.findByIdAndUpdate(metadata.appointmentId, {
+      $push: { payments: payment._id },
     });
 
     // Update appointment status based on type
@@ -282,5 +297,105 @@ export const paymongoWebhook = async (req: Request, res: Response) => {
       });
     }
     res.sendStatus(200);
+  }
+};
+
+export const createPaymongoRefund = async (req: Request, res: Response) => {
+  try {
+    const { id: appointmentId } = req.params;
+    const { amount, reason } = req.body;
+    if (!appointmentId || !amount) {
+      return res.status(400).json({
+        message: "Appointment ID and refund amount are required",
+      });
+    }
+
+    // Check if appointment exists
+    const appointment = await AppointmentModel.findById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Check if appointment has completed payments
+    const completedPayments = await PaymentModel.find({
+      appointmentId,
+      status: "Completed",
+      method: "Online", // Only online payments can be refunded via PayMongo
+    });
+
+    if (completedPayments.length === 0) {
+      return res.status(400).json({
+        message: "No completed online payments found for this appointment",
+      });
+    }
+
+    // Calculate total paid amount
+    const totalPaid = completedPayments.reduce(
+      (sum, payment) => sum + payment.amount,
+      0,
+    );
+
+    // Check if refund amount is valid
+    if (amount > totalPaid) {
+      return res.status(400).json({
+        message: `Refund amount (${amount}) cannot exceed total paid amount (${totalPaid})`,
+      });
+    }
+
+    for (const payment of completedPayments) {
+      const refundResponse = await axios.post(
+        "https://api.paymongo.com/v1/refunds",
+        {
+          data: {
+            attributes: {
+              amount: payment.amount * 100,
+              payment_id: payment.transactionId,
+              reason: "requested_by_customer",
+            },
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              "Basic " +
+              Buffer.from(process.env.PAYMONGO_SECRET_KEY + ":").toString(
+                "base64",
+              ),
+          },
+        },
+      );
+
+      // Record the refund in database
+      const refund = await PaymentModel.create({
+        appointmentId,
+        amount: -amount, // Negative amount for refund
+        method: "Online",
+        type: "Refund",
+        status: "Completed",
+        transactionId: refundResponse.data.data.id,
+        remarks: reason || "Refund processed via PayMongo",
+      });
+
+      // Add refund to appointment's payments array
+      await AppointmentModel.findByIdAndUpdate(appointmentId, {
+        $push: { payments: refund._id },
+      });
+
+      // Record each refund in DB as you already do
+    }
+
+    res.status(200).json({
+      message: "Refund processed successfully",
+    });
+  } catch (error: any) {
+    console.error(
+      "PayMongo refund error:",
+      error.response?.data || error.message,
+    );
+    res.status(500).json({
+      message: "Failed to process refund",
+      error: error.response?.data?.errors || error.message,
+    });
   }
 };

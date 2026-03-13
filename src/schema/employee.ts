@@ -5,6 +5,7 @@ export interface IEmployee extends Document {
   imageUrl: string;
   imagePublicId: string;
   status: "available" | "unavailable";
+  schedule: string[]; // e.g. ["monday", "tuesday"]
 }
 
 const ServiceSchema = new mongoose.Schema(
@@ -17,6 +18,7 @@ const ServiceSchema = new mongoose.Schema(
       enum: ["available", "unavailable"],
       default: "available",
     },
+    schedule: { type: [String], default: [] },
   },
   { timestamps: true },
 );

@@ -7,7 +7,7 @@ export const createEmployee = async (req: Request, res: Response) => {
   let uploadedPublicId: string | undefined;
 
   try {
-    const { name, status } = req.body;
+    const { name, status, schedule } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -33,6 +33,7 @@ export const createEmployee = async (req: Request, res: Response) => {
       status,
       imageUrl,
       imagePublicId: uploadedPublicId,
+      schedule: schedule || [], // default to empty array if not provided
     });
 
     await record.save();
@@ -75,7 +76,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
   let uploadedPublicId: string | undefined;
 
   try {
-    const { name, status } = req.body;
+    const { name, status, schedule } = req.body;
 
     const existingRecord = await EmployeeModel.findById(req.params.id);
     if (!existingRecord)
@@ -84,6 +85,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
     let updateData: Record<string, any> = {
       name,
       status,
+      schedule: schedule || [], // default to empty array if not provided
     };
 
     let imageUrl: string | undefined;

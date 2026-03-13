@@ -188,7 +188,8 @@ export const cancelAppointment = async (req: Request, res: Response) => {
         .json({ message: "Cancellation notes are required." });
     }
 
-    const appointment = await AppointmentModel.findById(id);
+    const appointment =
+      await AppointmentModel.findById(id).populate("payments");
     if (!appointment)
       return res.status(404).json({ message: "Appointment not found" });
 

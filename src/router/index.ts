@@ -9,6 +9,8 @@ import emailVerification from "./emailVerification";
 import reset_password from "./reset_password";
 import homepage from "./homepage";
 import employee from "./employee";
+import category from "./category";
+import intensity from "./intensity";
 
 const router = express.Router();
 
@@ -20,6 +22,8 @@ export default (): express.Router => {
   appointment(router);
   settings(router);
   payment(router);
+  category(router);
+  intensity(router);
   reset_password(router);
   emailVerification(router);
   homepage(router);
