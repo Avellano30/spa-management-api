@@ -11,7 +11,7 @@ export const createAppointment = async (req: Request, res: Response) => {
   try {
     const {
       clientId,
-      serviceId,
+      services,
       date,
       startTime,
       notes,
@@ -19,7 +19,26 @@ export const createAppointment = async (req: Request, res: Response) => {
       employee,
     } = req.body;
 
-    if (!clientId || !serviceId || !date || !startTime)
+    // Check if client already has 2 or more Pending appointments
+    const pendingCount = await AppointmentModel.countDocuments({
+      clientId,
+      status: "Pending",
+    });
+    if (pendingCount >= 2) {
+      return res.status(400).json({
+        message:
+          "You can only have up to 2 pending appointments at a time. Please wait for your current pending appointments to be processed before booking another.",
+      });
+    }
+
+    if (
+      !clientId ||
+      !services ||
+      !Array.isArray(services) ||
+      services.length === 0 ||
+      !date ||
+      !startTime
+    )
       return res.status(400).json({ message: "Missing required fields" });
 
     const client = await ClientModel.findById(clientId);
@@ -33,9 +52,31 @@ export const createAppointment = async (req: Request, res: Response) => {
             : "Account is inactive. Please contact support.",
       });
 
-    const service = await ServiceModel.findById(serviceId);
-    if (!service || service.status !== "available")
-      return res.status(400).json({ message: "Service unavailable" });
+    // Fetch and validate all services
+    const validatedServices = [];
+    let totalDuration = 0;
+
+    for (const serviceItem of services) {
+      const { serviceId, intensity } = serviceItem;
+      if (!serviceId)
+        return res
+          .status(400)
+          .json({ message: "Service ID is required for each service" });
+
+      const service = await ServiceModel.findById(serviceId);
+      if (!service || service.status !== "available")
+        return res
+          .status(400)
+          .json({ message: `Service ${serviceId} unavailable` });
+
+      validatedServices.push({
+        serviceId,
+        intensity: intensity || service.intensity, // Use provided intensity or default from service
+        service: { ...service.toObject(), price: service.price },
+      });
+
+      totalDuration += service.duration;
+    }
 
     const settings = await SpaSettingsModel.findOne();
     if (!settings)
@@ -46,9 +87,9 @@ export const createAppointment = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "Cannot book an appointment in the past" });
 
-    // Compute time bounds
+    // Compute time bounds using total duration
     const startMin = toMinutes(startTime);
-    const endMin = startMin + service.duration;
+    const endMin = startMin + totalDuration;
     const openMin = toMinutes(settings.openingTime);
     const closeMin = toMinutes(settings.closingTime);
 
@@ -71,15 +112,6 @@ export const createAppointment = async (req: Request, res: Response) => {
         closeMin,
       });
     }
-
-    //     if (startMin < openMin || endMin > closeMin)
-    //       return res.status(400).json({
-    //         message: "Outside operating hours",
-    //         startMin,
-    //         endMin,
-    //         openMin,
-    //         closeMin,
-    //       });
 
     const endTime = toHHMM(endMin);
 
@@ -113,7 +145,7 @@ export const createAppointment = async (req: Request, res: Response) => {
 
     const appointmentData: any = {
       clientId,
-      serviceId,
+      services: validatedServices,
       date,
       startTime,
       endTime,
@@ -217,8 +249,16 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
     if (!appointment)
       return res.status(404).json({ message: "Appointment not found" });
 
-    const service = await ServiceModel.findById(appointment.serviceId);
-    if (!service) return res.status(400).json({ message: "Service not found" });
+    // Calculate total duration from all services
+    let totalDuration = 0;
+    for (const serviceItem of appointment.services) {
+      const service = await ServiceModel.findById(serviceItem.serviceId);
+      if (!service)
+        return res
+          .status(400)
+          .json({ message: `Service ${serviceItem.serviceId} not found` });
+      totalDuration += service.duration;
+    }
 
     const settings = await SpaSettingsModel.findOne();
     if (!settings)
@@ -230,7 +270,7 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
         .json({ message: "Cannot reschedule to a past date" });
 
     const startMin = toMinutes(startTime);
-    const endMin = startMin + service.duration;
+    const endMin = startMin + totalDuration;
     const openMin = toMinutes(settings.openingTime);
     const closeMin = toMinutes(settings.closingTime);
 
@@ -317,10 +357,16 @@ export const getAppointments = async (req: Request, res: Response) => {
 
     const appointments = await AppointmentModel.find(filter)
       .populate("clientId", "firstname lastname email phone")
-      .populate(
-        "serviceId",
-        "name description price duration category imageUrl",
-      )
+      .populate({
+        path: "services.serviceId",
+        model: "Service",
+        select: "name description price duration category imageUrl",
+      })
+      .populate({
+        path: "employee",
+        model: "Employee",
+        select: "name imageUrl imagePublicId status schedule",
+      })
       .populate("payments")
       .sort({ createdAt: -1 });
 
@@ -335,10 +381,16 @@ export const getAppointmentById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const appointment = await AppointmentModel.findById(id)
       .populate("clientId", "firstname lastname email phone")
-      .populate(
-        "serviceId",
-        "name description price duration category imageUrl",
-      );
+      .populate({
+        path: "services.serviceId",
+        model: "Service",
+        select: "name description price duration category imageUrl",
+      })
+      .populate({
+        path: "employee",
+        model: "Employee",
+        select: "name imageUrl imagePublicId status schedule",
+      });
 
     if (!appointment)
       return res.status(404).json({ message: "Appointment not found" });
@@ -356,10 +408,16 @@ export const getClientAppointments = async (req: Request, res: Response) => {
       clientId,
       isTemporary: false,
     })
-      .populate(
-        "serviceId",
-        "name description price duration category imageUrl",
-      )
+      .populate({
+        path: "services.serviceId",
+        model: "Service",
+        select: "name description price duration category imageUrl",
+      })
+      .populate({
+        path: "employee",
+        model: "Employee",
+        select: "name imageUrl imagePublicId status schedule",
+      })
       .populate("payments")
       .sort({ date: -1 });
 

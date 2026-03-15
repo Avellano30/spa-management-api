@@ -12,8 +12,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 export const createPaymentSession = async (req: Request, res: Response) => {
   try {
     const { appointmentId, type } = req.body;
-    const appointment =
-      await AppointmentModel.findById(appointmentId).populate("serviceId");
+    const appointment = await AppointmentModel.findById(appointmentId).populate(
+      {
+        path: "services.serviceId",
+        model: "Service",
+      },
+    );
     if (!appointment)
       return res.status(404).json({ message: "Appointment not found" });
 
@@ -23,8 +27,13 @@ export const createPaymentSession = async (req: Request, res: Response) => {
         .status(404)
         .json({ message: "Settings for downpayment not found" });
 
-    const service = appointment.serviceId as any;
-    const totalPrice = service.price;
+    // Calculate total price from all services
+    const totalPrice = appointment.services.reduce(
+      (sum: number, serviceItem: any) => {
+        return sum + serviceItem.service.price;
+      },
+      0,
+    );
 
     // Determine payment amount
     let amount = totalPrice;
@@ -45,22 +54,31 @@ export const createPaymentSession = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "Appointment already fully paid" });
 
+    // Create line items for each service, distributing the payment amount proportionally
+    const lineItems = appointment.services.map((serviceItem: any) => {
+      const servicePrice = serviceItem.service.price;
+      const proportion = servicePrice / totalPrice;
+      const itemAmount = Math.round(amount * proportion);
+
+      return {
+        price_data: {
+          currency: "php",
+          product_data: {
+            name: `${serviceItem.service.name} (${type} Payment)`,
+            images: serviceItem.service.imageUrl
+              ? [serviceItem.service.imageUrl]
+              : [],
+          },
+          unit_amount: itemAmount * 100, // in cents
+        },
+        quantity: 1,
+      };
+    });
+
     // Create Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "php",
-            product_data: {
-              name: `${service.name} (${type} Payment)`,
-              images: service.imageUrl ? [service.imageUrl] : [],
-            },
-            unit_amount: Math.round(amount * 100), // in cents
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: lineItems,
       mode: "payment",
       success_url: `${process.env.FRONTEND_URL}/payment-success`,
       cancel_url: `${process.env.FRONTEND_URL}/payment-cancelled`,
@@ -131,7 +149,10 @@ export const createCashPayment = async (req: Request, res: Response) => {
 
     const appointment = await AppointmentModel.findById(appointmentId)
       .populate("clientId")
-      .populate("serviceId");
+      .populate({
+        path: "services.serviceId",
+        model: "Service",
+      });
 
     if (!appointment)
       return res.status(404).json({ message: "Appointment not found" });
@@ -174,7 +195,10 @@ export const createPaymongoPaymentSession = async (
     const { type, appointmentId } = req.body;
 
     const appointment = await AppointmentModel.findById(appointmentId)
-      .populate("serviceId")
+      .populate({
+        path: "services.serviceId",
+        model: "Service",
+      })
       .populate("clientId");
     if (!appointment)
       return res.status(404).json({ message: "Appointment not found" });
@@ -185,9 +209,14 @@ export const createPaymongoPaymentSession = async (
         .status(404)
         .json({ message: "Settings for downpayment not found" });
 
-    const service = appointment.serviceId as any;
     const client = appointment.clientId as any;
-    const totalPrice = service.price;
+    // Calculate total price from all services
+    const totalPrice = appointment.services.reduce(
+      (sum: number, serviceItem: any) => {
+        return sum + serviceItem.service.price;
+      },
+      0,
+    );
 
     // Determine payment amount
     let amount = totalPrice;
@@ -208,6 +237,20 @@ export const createPaymongoPaymentSession = async (
         .status(400)
         .json({ message: "Appointment already fully paid" });
 
+    // Create line items for each service, distributing the payment amount proportionally
+    const lineItems = appointment.services.map((serviceItem: any) => {
+      const servicePrice = serviceItem.service.price;
+      const proportion = servicePrice / totalPrice;
+      const itemAmount = Math.round(amount * proportion * 100); // Convert to cents
+
+      return {
+        currency: "PHP",
+        amount: itemAmount,
+        name: `${serviceItem.service.name} (${type} Payment)`,
+        quantity: 1,
+      };
+    });
+
     // Call PayMongo API to create checkout session for GCash
     const response = await axios.post(
       "https://api.paymongo.com/v1/checkout_sessions",
@@ -216,21 +259,14 @@ export const createPaymongoPaymentSession = async (
           attributes: {
             payment_method_types: ["gcash", "paymaya", "card"],
             external_reference_number: appointmentId,
-            description: `Payment for ${service.name} (${type})`,
+            description: `Payment for ${appointment.services.map((s: any) => s.service.name).join(", ")} (${type})`,
             metadata: { type, appointmentId },
             billing: {
               name: client.firstname + " " + client.lastname,
               email: client.email,
               phone: client.phone,
             },
-            line_items: [
-              {
-                currency: "PHP",
-                amount: amount * 100, // Convert to cents
-                name: service.name + ` (${type} Payment)`,
-                quantity: 1,
-              },
-            ],
+            line_items: lineItems,
             success_url: `${process.env.FRONTEND_URL}/payment-success`,
             cancel_url: `${process.env.FRONTEND_URL}/payment-cancelled`,
           },

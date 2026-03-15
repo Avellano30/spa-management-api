@@ -2,7 +2,11 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IAppointment extends Document {
   clientId: mongoose.Types.ObjectId;
-  serviceId: mongoose.Types.ObjectId;
+  services: {
+    serviceId: mongoose.Types.ObjectId;
+    intensity?: string;
+    service: any; // Will be populated with Service & { price: number }
+  }[];
   date: Date;
   startTime: string; // e.g. "11:00"
   endTime: string; // e.g. "13:30"
@@ -16,7 +20,17 @@ export interface IAppointment extends Document {
 const AppointmentSchema = new Schema<IAppointment>(
   {
     clientId: { type: Schema.Types.ObjectId, ref: "Client", required: true },
-    serviceId: { type: Schema.Types.ObjectId, ref: "Service", required: true },
+    services: [
+      {
+        serviceId: {
+          type: Schema.Types.ObjectId,
+          ref: "Service",
+          required: true,
+        },
+        intensity: { type: String, required: false },
+        service: { type: Schema.Types.Mixed, required: true },
+      },
+    ],
     date: { type: Date, required: true },
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },
@@ -30,7 +44,7 @@ const AppointmentSchema = new Schema<IAppointment>(
       type: Boolean,
       default: false,
     },
-    employee: { type: String, required: false, default: "" },
+    employee: { type: Schema.Types.ObjectId, ref: "Employee", required: false },
     expiresAt: { type: Date, required: false },
   },
   { timestamps: true, collection: "appointments" },
