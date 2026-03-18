@@ -44,7 +44,7 @@ const AppointmentSchema = new Schema<IAppointment>(
       type: Boolean,
       default: false,
     },
-    employee: { type: Schema.Types.ObjectId, ref: "Employee", required: false },
+    employee: { type: Schema.Types.ObjectId, ref: "Employee", required: false,default:null, },
     expiresAt: { type: Date, required: false },
   },
   { timestamps: true, collection: "appointments" },
