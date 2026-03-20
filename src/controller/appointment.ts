@@ -4,7 +4,7 @@ import { ClientModel } from "../schema/client";
 import { ServiceModel } from "../schema/service";
 import { SpaSettingsModel } from "../schema/settings";
 import { toHHMM, toMinutes } from "../helpers/timeUtils";
-
+import { EmployeeModel } from "../schema/employee";
 const TEMP_APPT_LIFETIME_MS = 10 * 60 * 1000; // 10 minutes in milliseconds
 
 export const createAppointment = async (req: Request, res: Response) => {
@@ -270,6 +270,22 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
       return res
         .status(400)
         .json({ message: "Cannot reschedule to a past date" });
+
+      // 👇 Add this - check if employee works on the new date
+      if (appointment.employee) {
+          const employee = await EmployeeModel.findById(appointment.employee);
+          if (employee) {
+              const dayOfWeek = new Date(date).toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
+              const worksOnDay = employee.schedule?.some((d: string) =>
+                  d.toLowerCase() === dayOfWeek
+              );
+              if (!worksOnDay) {
+                  return res.status(400).json({
+                      message: `Your assigned therapist ${employee.name} does not work on ${dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1)}. Please choose a different date.`,
+                  });
+              }
+          }
+      }
 
     const startMin = toMinutes(startTime);
     const endMin = startMin + totalDuration;
