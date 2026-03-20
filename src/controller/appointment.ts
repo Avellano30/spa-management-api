@@ -117,13 +117,13 @@ export const createAppointment = async (req: Request, res: Response) => {
     const endTime = toHHMM(endMin);
 
     // Count overlapping appointments for room availability
-    const existingAppointments = await AppointmentModel.countDocuments({
-      date,
-      status: { $in: ["Approved", "Rescheduled"] },
-        isTemporary: { $ne: true },
-      startTime: { $lt: endTime },
-      endTime: { $gt: startTime },
-    });
+      const existingAppointments = await AppointmentModel.countDocuments({
+          date,
+          status: { $in: ["Approved", "Rescheduled", "Pending"] }, // 👈 add "Pending"
+          isTemporary: { $ne: true },
+          startTime: { $lt: endTime },
+          endTime: { $gt: startTime },
+      });
 
     if (existingAppointments >= settings.totalRooms)
       return res
@@ -276,8 +276,17 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
     const openMin = toMinutes(settings.openingTime);
     const closeMin = toMinutes(settings.closingTime);
 
-    if (startMin < openMin || endMin > closeMin)
-      return res.status(400).json({ message: "Outside operating hours" });
+      let isValid;
+
+      if (closeMin > openMin) {
+          isValid = startMin >= openMin && endMin <= closeMin;
+      } else {
+          isValid = startMin >= openMin || endMin <= closeMin;
+      }
+
+      if (!isValid) {
+          return res.status(400).json({ message: "Outside operating hours" });
+      }
 
     const endTime = toHHMM(endMin);
 
@@ -331,6 +340,7 @@ export const completeAppointment = async (req: Request, res: Response) => {
     const appointment = await AppointmentModel.findById(id);
     if (!appointment)
       return res.status(404).json({ message: "Appointment not found" });
+
 
     if (!["Approved", "Rescheduled"].includes(appointment.status))
       return res

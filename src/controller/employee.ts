@@ -7,7 +7,10 @@ export const createEmployee = async (req: Request, res: Response) => {
   let uploadedPublicId: string | undefined;
 
   try {
-    const { name, status, schedule } = req.body;
+      const { name, status } = req.body;
+      const schedule = req.body["schedule[]"]
+          ? [].concat(req.body["schedule[]"])
+          : req.body.schedule || [];
 
     if (!name) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -76,7 +79,10 @@ export const updateEmployee = async (req: Request, res: Response) => {
   let uploadedPublicId: string | undefined;
 
   try {
-    const { name, status, schedule } = req.body;
+      const { name, status } = req.body;
+      const schedule = req.body["schedule[]"]
+          ? [].concat(req.body["schedule[]"])
+          : req.body.schedule || [];
 
     const existingRecord = await EmployeeModel.findById(req.params.id);
     if (!existingRecord)
