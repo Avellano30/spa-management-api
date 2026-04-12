@@ -10,7 +10,7 @@ export interface IAppointment extends Document {
   date: Date;
   startTime: string; // e.g. "11:00"
   endTime: string; // e.g. "13:30"
-  status: "Pending" | "Approved" | "Cancelled" | "Rescheduled" | "Completed";
+  status: "Pending" | "Approved" | "Cancelled" | "Rescheduled" | "Completed" | "Refunded";
   notes?: string;
   isTemporary: boolean;
   expiresAt?: Date;
@@ -36,7 +36,7 @@ const AppointmentSchema = new Schema<IAppointment>(
     endTime: { type: String, required: true },
     status: {
       type: String,
-      enum: ["Pending", "Approved", "Cancelled", "Rescheduled", "Completed"],
+      enum: ["Pending", "Approved", "Cancelled", "Rescheduled", "Completed", "Refunded"],
       default: "Pending",
     },
     notes: { type: String, trim: true, default: "" },

@@ -5,6 +5,8 @@ import { ServiceModel } from "../schema/service";
 import { SpaSettingsModel } from "../schema/settings";
 import { toHHMM, toMinutes } from "../helpers/timeUtils";
 import { EmployeeModel } from "../schema/employee";
+import axios from "axios";
+import { PaymentModel } from "../schema/payment";
 const TEMP_APPT_LIFETIME_MS = 10 * 60 * 1000; // 10 minutes in milliseconds
 
 export const createAppointment = async (req: Request, res: Response) => {
@@ -212,29 +214,71 @@ export const approveAppointment = async (req: Request, res: Response) => {
 };
 
 export const cancelAppointment = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { notes } = req.body;
+    try {
+        const { id } = req.params;
+        // 1. Destructure isAdmin from the body
+        const { notes, isAdmin } = req.body;
 
-    if (!notes || notes.trim() === "") {
-      return res
-        .status(400)
-        .json({ message: "Cancellation notes are required." });
+        if (!notes || notes.trim() === "") {
+            return res.status(400).json({ message: "Cancellation notes are required." });
+        }
+
+        const appointment = await AppointmentModel.findById(id).populate("payments");
+        if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+
+        // 2. Logic Split: Admin vs. Client
+        if (String(isAdmin) === 'true') {
+            // Look for a successful payment to refund
+            const payment = (appointment as any).payments?.find(
+                (p: any) => p.status === "Completed" || p.status === "paid"
+            );
+
+            if (payment && (payment.transactionId || payment.paymentId)) {
+                const total = appointment.services.reduce((acc, curr) => acc + (curr.service.price || 0), 0);
+
+                // Call PayMongo (ensure axios is imported)
+                const refundRes = await axios.post('https://api.paymongo.com/v1/refunds', {
+                    data: { attributes: {
+                            amount: total * 100,
+                            payment_id: payment.transactionId || payment.paymentId,
+                            reason: 'others',
+                            notes: `Admin Cancel: ${notes}`
+                        } }
+                }, {
+                    headers: { Authorization: `Basic ${Buffer.from(process.env.PAYMONGO_SECRET_KEY + ':').toString('base64')}` }
+                });
+
+                // Create the negative payment record
+                const refundRecord = await PaymentModel.create({
+                    appointmentId: id,
+                    amount: -total,
+                    method: "Online",
+                    type: "Refund",
+                    status: "Completed",
+                    transactionId: refundRes.data.data.id,
+                    remarks: `Refund: ${notes}`
+                });
+
+                await AppointmentModel.findByIdAndUpdate(id, { $push: { payments: refundRecord._id } });
+                appointment.status = "Refunded"; // 3. Set to Refunded for Admin
+            } else {
+                appointment.status = "Cancelled";
+            }
+        } else {
+            // 4. If not Admin, it's just a regular cancellation
+            appointment.status = "Cancelled";
+        }
+
+        appointment.notes = notes;
+        await appointment.save();
+
+        res.status(200).json({
+            message: isAdmin ? "Appointment refunded and cancelled" : "Appointment cancelled",
+            appointment
+        });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message });
     }
-
-    const appointment =
-      await AppointmentModel.findById(id).populate("payments");
-    if (!appointment)
-      return res.status(404).json({ message: "Appointment not found" });
-
-    appointment.status = "Cancelled";
-    appointment.notes = notes;
-    await appointment.save();
-
-    res.status(200).json({ message: "Appointment cancelled", appointment });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
 };
 
 export const rescheduleAppointment = async (req: Request, res: Response) => {
@@ -471,4 +515,33 @@ export const deleteTemporaryAppointment = async (
   } catch (err: any) {
     res.status(500).json({ message: err.message });
   }
+};
+// src/controller/appointment.ts
+
+export const refundAppointment = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const appointment = await AppointmentModel.findById(id).populate("payments");
+
+        // Guard clause to prevent "possibly null" errors
+        if (!appointment) {
+            return res.status(404).json({ message: "Appointment not found" });
+        }
+
+        const payment = (appointment as any).payments?.find(
+            (p: any) => p.status === "Completed" || p.status === "paid"
+        );
+
+        if (!payment) return res.status(400).json({ message: "No successful payment found" });
+
+        // Trigger PayMongo logic here...
+        // ... (your existing PayMongo axios call)
+
+        appointment.status = "Refunded";
+        await appointment.save();
+
+        res.status(200).json({ message: "Refunded successfully", appointment });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message });
+    }
 };
