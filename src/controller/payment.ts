@@ -172,14 +172,17 @@ export const createCashPayment = async (req: Request, res: Response) => {
     });
 
     // Add payment to appointment's payments array
-    await AppointmentModel.findByIdAndUpdate(appointmentId, {
-      $push: { payments: payment._id },
-    });
+// Add payment to appointment's payments array
+      await AppointmentModel.findByIdAndUpdate(appointmentId, {
+          $push: { payments: payment._id },
+      });
 
-    res.status(201).json({
-      message: "Cash payment recorded successfully",
-      payment,
-    });
+// 🔥 CHANGE: Fetch the payment again but with all fields, or just ensure
+// the client-side 'load()' function is called after this returns.
+      res.status(201).json({
+          message: "Cash payment recorded successfully",
+          payment: payment, // Ensure this contains the 'remarks' field you just saved
+      });
   } catch (error: any) {
     console.error("Error creating cash payment:", error.message);
     res.status(500).json({ message: error.message });

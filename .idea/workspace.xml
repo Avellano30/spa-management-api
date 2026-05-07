@@ -4,11 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="fixed employee management, and reschedule function.">
+    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="adjusted auto-refund to be only for admin side.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/controller/appointment.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller/appointment.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/router/appointment.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/router/appointment.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controller/payment.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller/payment.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/schema/appointment.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/schema/appointment.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/schema/employee.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/schema/employee.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -171,6 +172,7 @@
       <workItem from="1773833157825" duration="2809000" />
       <workItem from="1773839715388" duration="242000" />
       <workItem from="1773983696096" duration="4148000" />
+      <workItem from="1778132299826" duration="3530000" />
     </task>
     <task id="LOCAL-00001" summary="Remove multer-storage-cloudinary due to conflict">
       <option name="closed" value="true" />

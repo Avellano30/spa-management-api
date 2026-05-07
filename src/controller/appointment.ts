@@ -7,541 +7,295 @@ import { toHHMM, toMinutes } from "../helpers/timeUtils";
 import { EmployeeModel } from "../schema/employee";
 import axios from "axios";
 import { PaymentModel } from "../schema/payment";
-const TEMP_APPT_LIFETIME_MS = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+const TEMP_APPT_LIFETIME_MS = 10 * 60 * 1000;
 
 export const createAppointment = async (req: Request, res: Response) => {
-  try {
-    const {
-      clientId,
-      services,
-      date,
-      startTime,
-      notes,
-      isTemporary,
-      employee,
-    } = req.body;
-      console.log("createAppointment called", { clientId, date, startTime, isTemporary });
-      // Check if client already has 2 or more Pending appointments
-    const pendingCount = await AppointmentModel.countDocuments({
-      clientId,
-      status: "Pending",
-        isTemporary: { $ne: true },
-    });
-    if (pendingCount >= 2) {
-      return res.status(400).json({
-        message:
-          "You can only have up to 2 pending appointments at a time. Please wait for your current pending appointments to be processed before booking another.",
-      });
+    try {
+        const { clientId, services, date, startTime, notes, isTemporary, employee } = req.body;
+
+        if (!clientId || !services || !Array.isArray(services) || services.length === 0 || !date || !startTime) {
+            return res.status(400).json({ message: "Missing required fields" });
+        }
+
+        const client = await ClientModel.findById(clientId);
+        if (!client) return res.status(404).json({ message: "Client not found" });
+        if (["banned", "inactive"].includes(client.status)) {
+            return res.status(403).json({ message: "Account is restricted." });
+        }
+
+        const pendingCount = await AppointmentModel.countDocuments({
+            clientId,
+            status: "Pending",
+            isTemporary: { $ne: true },
+        });
+        if (pendingCount >= 2) {
+            return res.status(400).json({ message: "You already have 2 pending appointments." });
+        }
+
+        const validatedServices = [];
+        let totalDuration = 0;
+        for (const serviceItem of services) {
+            const service = await ServiceModel.findById(serviceItem.serviceId);
+            if (!service || service.status !== "available") return res.status(400).json({ message: "Service unavailable" });
+
+            validatedServices.push({
+                serviceId: serviceItem.serviceId,
+                intensity: serviceItem.intensity || service.intensity,
+                service: { ...service.toObject(), price: service.price },
+            });
+            totalDuration += service.duration;
+        }
+
+        const settings = await SpaSettingsModel.findOne();
+        if (!settings) return res.status(500).json({ message: "Settings not configured" });
+
+        const startMin = toMinutes(startTime);
+        const endMin = startMin + totalDuration;
+        const endTime = toHHMM(endMin);
+        const openMin = toMinutes(settings.openingTime);
+        const closeMin = toMinutes(settings.closingTime);
+
+        const isValidHours = closeMin > openMin ? (startMin >= openMin && endMin <= closeMin) : (startMin >= openMin || endMin <= closeMin);
+        if (!isValidHours) return res.status(400).json({ message: "Outside operating hours" });
+
+        // --- THERAPIST BUSY CHECK ---
+        if (employee) {
+            const therapistConflict = await AppointmentModel.findOne({
+                employee,
+                date,
+                status: { $in: ["Approved", "Rescheduled", "Pending"] },
+                isTemporary: { $ne: true },
+                startTime: { $lt: endTime },
+                endTime: { $gt: startTime },
+            });
+            if (therapistConflict) return res.status(400).json({ message: "The selected therapist is already busy at this time." });
+        }
+
+        const roomOverlap = await AppointmentModel.countDocuments({
+            date,
+            status: { $in: ["Approved", "Rescheduled", "Pending"] },
+            isTemporary: { $ne: true },
+            startTime: { $lt: endTime },
+            endTime: { $gt: startTime },
+        });
+        if (roomOverlap >= settings.totalRooms) return res.status(400).json({ message: "All rooms are booked." });
+
+        const appointmentData: any = {
+            clientId, services: validatedServices, date, startTime, endTime, notes, status: "Pending", isTemporary, employee,
+        };
+        if (isTemporary) appointmentData.expiresAt = new Date(Date.now() + TEMP_APPT_LIFETIME_MS);
+
+        const appointment = await AppointmentModel.create(appointmentData);
+        res.status(201).json(appointment);
+    } catch (error: any) {
+        res.status(500).json({ message: error.message });
     }
-
-    if (
-      !clientId ||
-      !services ||
-      !Array.isArray(services) ||
-      services.length === 0 ||
-      !date ||
-      !startTime
-    )
-      return res.status(400).json({ message: "Missing required fields" });
-
-    const client = await ClientModel.findById(clientId);
-    if (!client) return res.status(404).json({ message: "Client not found" });
-
-    if (["banned", "inactive"].includes(client.status))
-      return res.status(403).json({
-        message:
-          client.status === "banned"
-            ? "Account is banned and cannot book appointments."
-            : "Account is inactive. Please contact support.",
-      });
-
-    // Fetch and validate all services
-    const validatedServices = [];
-    let totalDuration = 0;
-
-    for (const serviceItem of services) {
-      const { serviceId, intensity } = serviceItem;
-      if (!serviceId)
-        return res
-          .status(400)
-          .json({ message: "Service ID is required for each service" });
-
-      const service = await ServiceModel.findById(serviceId);
-      if (!service || service.status !== "available")
-        return res
-          .status(400)
-          .json({ message: `Service ${serviceId} unavailable` });
-
-      validatedServices.push({
-        serviceId,
-        intensity: intensity || service.intensity, // Use provided intensity or default from service
-        service: { ...service.toObject(), price: service.price },
-      });
-
-      totalDuration += service.duration;
-    }
-
-    const settings = await SpaSettingsModel.findOne();
-    if (!settings)
-      return res.status(500).json({ message: "Settings not configured" });
-
-    if (date < new Date().toISOString().split("T")[0])
-      return res
-        .status(400)
-        .json({ message: "Cannot book an appointment in the past" });
-
-    // Compute time bounds using total duration
-    const startMin = toMinutes(startTime);
-    const endMin = startMin + totalDuration;
-    const openMin = toMinutes(settings.openingTime);
-    const closeMin = toMinutes(settings.closingTime);
-
-    let isValid;
-
-    if (closeMin > openMin) {
-      // Normal hours (example: 9 AM - 6 PM)
-      isValid = startMin >= openMin && endMin <= closeMin;
-    } else {
-      // Overnight hours (example: 2 PM - 3 AM)
-      isValid = startMin >= openMin || endMin <= closeMin;
-    }
-
-    if (!isValid) {
-      return res.status(400).json({
-        message: "Outside operating hours",
-        startMin,
-        endMin,
-        openMin,
-        closeMin,
-      });
-    }
-
-    const endTime = toHHMM(endMin);
-
-    // Count overlapping appointments for room availability
-      const existingAppointments = await AppointmentModel.countDocuments({
-          date,
-          status: { $in: ["Approved", "Rescheduled", "Pending"] }, // 👈 add "Pending"
-          isTemporary: { $ne: true },
-          startTime: { $lt: endTime },
-          endTime: { $gt: startTime },
-      });
-
-    if (existingAppointments >= settings.totalRooms)
-      return res
-        .status(400)
-        .json({ message: "All rooms are booked for this time slot" });
-
-    // const clientOverlap = await AppointmentModel.countDocuments({
-    //   clientId,
-    //   date,
-    //   status: { $in: ["Approved", "Rescheduled", "Pending"] },
-    //   startTime: { $lt: endTime },
-    //   endTime: { $gt: startTime },
-    // });
-    //
-    // if (clientOverlap > 0) {
-    //   return res.status(400).json({
-    //     message:
-    //       "Client already has an approved/rescheduled appointment overlapping this time",
-    //   });
-    // }
-
-    const appointmentData: any = {
-      clientId,
-      services: validatedServices,
-      date,
-      startTime,
-      endTime,
-      notes,
-      status: "Pending",
-      isTemporary,
-      employee,
-    };
-
-    // If temporary, set expiresAt for TTL cleanup
-    if (isTemporary) {
-      appointmentData.expiresAt = new Date(Date.now() + TEMP_APPT_LIFETIME_MS);
-    }
-
-    const appointment = await AppointmentModel.create(appointmentData);
-
-    res.status(201).json(appointment);
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
 };
 
 export const updateAppointment = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const updates = req.body;
+    try {
+        const { id } = req.params;
+        const updates = req.body;
 
-    if (updates.isTemporary === false) {
-      updates.$unset = { expiresAt: "" };
+        if (updates.isTemporary === false) {
+            updates.$unset = { expiresAt: "" };
+        }
+
+        const updated = await AppointmentModel.findByIdAndUpdate(
+            id,
+            updates,
+            { new: true }
+        )
+            .populate("services.serviceId")
+            .populate("employee")
+            .populate("payments");
+
+        if (!updated) return res.status(404).json({ message: "Appointment not found" });
+
+        res.status(200).json({ message: "Appointment updated", appointment: updated });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message });
     }
-
-    const updated = await AppointmentModel.findByIdAndUpdate(id, updates, {
-      new: true,
-    });
-    if (!updated)
-      return res.status(404).json({ message: "Appointment not found" });
-
-    res
-      .status(200)
-      .json({ message: "Appointment updated", appointment: updated });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
 };
 
 export const approveAppointment = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const appointment = await AppointmentModel.findById(id);
-    if (!appointment)
-      return res.status(404).json({ message: "Appointment not found" });
+    try {
+        const updated = await AppointmentModel.findByIdAndUpdate(
+            req.params.id,
+            { status: "Approved", isTemporary: false, $unset: { expiresAt: "" } },
+            { new: true }
+        )
+            .populate("services.serviceId")
+            .populate("employee")
+            .populate("payments"); // 👈 ADD THIS
 
-    appointment.status = "Approved";
-    appointment.isTemporary = false; // mark as final
-    appointment.expiresAt = undefined; // prevent TTL deletion
-    await appointment.save();
-
-    res.status(200).json({ message: "Appointment approved", appointment });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
+        res.status(200).json({ message: "Approved", appointment: updated });
+    } catch (error: any) { res.status(500).json({ message: error.message }); }
 };
 
 export const cancelAppointment = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        // 1. Destructure isAdmin from the body
         const { notes, isAdmin } = req.body;
-
-        if (!notes || notes.trim() === "") {
-            return res.status(400).json({ message: "Cancellation notes are required." });
-        }
-
+        if (!notes) return res.status(400).json({ message: "Cancellation notes are required." });
         const appointment = await AppointmentModel.findById(id).populate("payments");
         if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
-        // 2. Logic Split: Admin vs. Client
         if (String(isAdmin) === 'true') {
-            // Look for a successful payment to refund
-            const payment = (appointment as any).payments?.find(
-                (p: any) => p.status === "Completed" || p.status === "paid"
-            );
-
-            if (payment && (payment.transactionId || payment.paymentId)) {
+            const payment = (appointment as any).payments?.find((p: any) => p.status === "Completed" || p.status === "paid");
+            if (payment) {
                 const total = appointment.services.reduce((acc, curr) => acc + (curr.service.price || 0), 0);
-
-                // Call PayMongo (ensure axios is imported)
                 const refundRes = await axios.post('https://api.paymongo.com/v1/refunds', {
-                    data: { attributes: {
-                            amount: total * 100,
-                            payment_id: payment.transactionId || payment.paymentId,
-                            reason: 'others',
-                            notes: `Admin Cancel: ${notes}`
-                        } }
+                    data: { attributes: { amount: total * 100, payment_id: payment.transactionId || payment.paymentId, reason: 'others', notes: `Admin Cancel: ${notes}` } }
                 }, {
                     headers: { Authorization: `Basic ${Buffer.from(process.env.PAYMONGO_SECRET_KEY + ':').toString('base64')}` }
                 });
-
-                // Create the negative payment record
                 const refundRecord = await PaymentModel.create({
-                    appointmentId: id,
-                    amount: -total,
-                    method: "Online",
-                    type: "Refund",
-                    status: "Completed",
-                    transactionId: refundRes.data.data.id,
-                    remarks: `Refund: ${notes}`
+                    appointmentId: id, amount: -total, method: "Online", type: "Refund", status: "Completed", transactionId: refundRes.data.data.id, remarks: `Refund: ${notes}`
                 });
-
                 await AppointmentModel.findByIdAndUpdate(id, { $push: { payments: refundRecord._id } });
-                appointment.status = "Refunded"; // 3. Set to Refunded for Admin
+                appointment.status = "Refunded";
             } else {
                 appointment.status = "Cancelled";
             }
         } else {
-            // 4. If not Admin, it's just a regular cancellation
             appointment.status = "Cancelled";
         }
-
         appointment.notes = notes;
         await appointment.save();
-
-        res.status(200).json({
-            message: isAdmin ? "Appointment refunded and cancelled" : "Appointment cancelled",
-            appointment
-        });
+        const finalAppt = await AppointmentModel.findById(id)
+            .populate("services.serviceId")
+            .populate("employee")
+            .populate("payments");
+        res.status(200).json({ message: "Appointment processed", appointment: finalAppt });
     } catch (error: any) {
         res.status(500).json({ message: error.message });
     }
 };
 
 export const rescheduleAppointment = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { date, startTime, notes } = req.body;
-
-    if (!date || !startTime)
-      return res
-        .status(400)
-        .json({ message: "Date and start time are required" });
-
-    const appointment = await AppointmentModel.findById(id);
-    if (!appointment)
-      return res.status(404).json({ message: "Appointment not found" });
-
-    // Calculate total duration from all services
-    let totalDuration = 0;
-    for (const serviceItem of appointment.services) {
-      const service = await ServiceModel.findById(serviceItem.serviceId);
-      if (!service)
-        return res
-          .status(400)
-          .json({ message: `Service ${serviceItem.serviceId} not found` });
-      totalDuration += service.duration;
-    }
-
-    const settings = await SpaSettingsModel.findOne();
-    if (!settings)
-      return res.status(500).json({ message: "Settings not configured" });
-
-    if (date < new Date().toISOString().split("T")[0])
-      return res
-        .status(400)
-        .json({ message: "Cannot reschedule to a past date" });
-
-      // 👇 Add this - check if employee works on the new date
-      if (appointment.employee) {
-          const employee = await EmployeeModel.findById(appointment.employee);
-          if (employee) {
-              const dayOfWeek = new Date(date).toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
-              const worksOnDay = employee.schedule?.some((d: string) =>
-                  d.toLowerCase() === dayOfWeek
-              );
-              if (!worksOnDay) {
-                  return res.status(400).json({
-                      message: `Your assigned therapist ${employee.name} does not work on ${dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1)}. Please choose a different date.`,
-                  });
-              }
-          }
-      }
-
-    const startMin = toMinutes(startTime);
-    const endMin = startMin + totalDuration;
-    const openMin = toMinutes(settings.openingTime);
-    const closeMin = toMinutes(settings.closingTime);
-
-      let isValid;
-
-      if (closeMin > openMin) {
-          isValid = startMin >= openMin && endMin <= closeMin;
-      } else {
-          isValid = startMin >= openMin || endMin <= closeMin;
-      }
-
-      if (!isValid) {
-          return res.status(400).json({ message: "Outside operating hours" });
-      }
-
-    const endTime = toHHMM(endMin);
-
-    const overlapCount = await AppointmentModel.countDocuments({
-      date,
-      status: { $in: ["Approved", "Rescheduled"] },
-      _id: { $ne: id },
-      startTime: { $lt: endTime },
-      endTime: { $gt: startTime },
-    });
-
-    if (overlapCount >= settings.totalRooms)
-      return res
-        .status(400)
-        .json({ message: "All rooms booked for that slot" });
-
-    // const clientOverlap = await AppointmentModel.countDocuments({
-    //   clientId: appointment.clientId,
-    //   date,
-    //   status: { $in: ["Approved", "Rescheduled", "Pending"] },
-    //   _id: { $ne: id },
-    //   startTime: { $lt: endTime },
-    //   endTime: { $gt: startTime },
-    // });
-    //
-    // if (clientOverlap > 0) {
-    //   return res.status(400).json({
-    //     message:
-    //       "Client already has an approved/rescheduled appointment overlapping the requested time",
-    //   });
-    // }
-
-    if (notes) appointment.notes = notes;
-    appointment.date = date;
-    appointment.startTime = startTime;
-    appointment.endTime = endTime;
-    appointment.status = "Rescheduled";
-    await appointment.save();
-
-    res
-      .status(200)
-      .json({ message: "Appointment rescheduled successfully", appointment });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const completeAppointment = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const appointment = await AppointmentModel.findById(id);
-    if (!appointment)
-      return res.status(404).json({ message: "Appointment not found" });
-
-
-    if (!["Approved", "Rescheduled"].includes(appointment.status))
-      return res
-        .status(400)
-        .json({ message: "Only approved appointments can be completed" });
-
-    appointment.status = "Completed";
-    await appointment.save();
-
-    res
-      .status(200)
-      .json({ message: "Appointment marked as completed", appointment });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const getAppointments = async (req: Request, res: Response) => {
-  try {
-    const { status, date, clientId } = req.query;
-    const filter: Record<string, any> = { isTemporary: false };
-
-    if (status) filter.status = status;
-    if (date) filter.date = new Date(date as string);
-    if (clientId) filter.clientId = clientId;
-
-    const appointments = await AppointmentModel.find(filter)
-      .populate("clientId", "firstname lastname email phone")
-      .populate({
-        path: "services.serviceId",
-        model: "Service",
-        select: "name description price duration category imageUrl",
-      })
-      .populate({
-        path: "employee",
-        model: "Employee",
-        select: "name imageUrl imagePublicId status schedule",
-      })
-      .populate("payments")
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({ count: appointments.length, appointments });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const getAppointmentById = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const appointment = await AppointmentModel.findById(id)
-      .populate("clientId", "firstname lastname email phone")
-      .populate({
-        path: "services.serviceId",
-        model: "Service",
-        select: "name description price duration category imageUrl",
-      })
-      .populate({
-        path: "employee",
-        model: "Employee",
-        select: "name imageUrl imagePublicId status schedule",
-      });
-
-    if (!appointment)
-      return res.status(404).json({ message: "Appointment not found" });
-
-    res.status(200).json({ appointment });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const getClientAppointments = async (req: Request, res: Response) => {
-  try {
-    const { clientId } = req.params;
-    const appointments = await AppointmentModel.find({
-      clientId,
-      isTemporary: false,
-    })
-      .populate({
-        path: "services.serviceId",
-        model: "Service",
-        select: "name description price duration category imageUrl",
-      })
-      .populate({
-        path: "employee",
-        model: "Employee",
-        select: "name imageUrl imagePublicId status schedule",
-      })
-      .populate("payments")
-      .sort({ date: -1 });
-
-    if (!appointments.length)
-      return res
-        .status(404)
-        .json({ message: "No appointments found for this client" });
-
-    res.status(200).json({ count: appointments.length, appointments });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const deleteTemporaryAppointment = async (
-  req: Request,
-  res: Response,
-) => {
-  try {
-    const { id } = req.params;
-    await AppointmentModel.findOneAndDelete({ _id: id, isTemporary: true });
-    res.json({ message: "Temporary appointment deleted" });
-  } catch (err: any) {
-    res.status(500).json({ message: err.message });
-  }
-};
-// src/controller/appointment.ts
-
-export const refundAppointment = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const appointment = await AppointmentModel.findById(id).populate("payments");
+        const { date, startTime, notes } = req.body;
+        if (!date || !startTime) return res.status(400).json({ message: "Date and time required" });
+        const appointment = await AppointmentModel.findById(id);
+        if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
-        // Guard clause to prevent "possibly null" errors
-        if (!appointment) {
-            return res.status(404).json({ message: "Appointment not found" });
+        let totalDuration = 0;
+        for (const item of appointment.services) {
+            const s = await ServiceModel.findById(item.serviceId);
+            if (s) totalDuration += s.duration;
         }
 
-        const payment = (appointment as any).payments?.find(
-            (p: any) => p.status === "Completed" || p.status === "paid"
-        );
+        const startMin = toMinutes(startTime);
+        const endMin = startMin + totalDuration;
+        const endTime = toHHMM(endMin);
 
-        if (!payment) return res.status(400).json({ message: "No successful payment found" });
+        if (appointment.employee) {
+            const employee = await EmployeeModel.findById(appointment.employee);
+            if (employee) {
+                const dayOfWeek = new Date(date).toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
+                if (!employee.schedule?.some((d: string) => d.toLowerCase() === dayOfWeek)) {
+                    return res.status(400).json({ message: `${employee.name} does not work on ${dayOfWeek}.` });
+                }
+                const conflict = await AppointmentModel.findOne({
+                    employee: appointment.employee, _id: { $ne: id }, date,
+                    status: { $in: ["Approved", "Rescheduled", "Pending"] },
+                    startTime: { $lt: endTime }, endTime: { $gt: startTime },
+                });
+                if (conflict) return res.status(400).json({ message: "Therapist is busy at this new time." });
+            }
+        }
 
-        // Trigger PayMongo logic here...
-        // ... (your existing PayMongo axios call)
+        const settings = await SpaSettingsModel.findOne();
+        const roomOverlap = await AppointmentModel.countDocuments({
+            date, _id: { $ne: id }, status: { $in: ["Approved", "Rescheduled", "Pending"] },
+            startTime: { $lt: endTime }, endTime: { $gt: startTime },
+        });
+        if (settings && roomOverlap >= settings.totalRooms) return res.status(400).json({ message: "All rooms full." });
 
-        appointment.status = "Refunded";
+        appointment.date = date; appointment.startTime = startTime; appointment.endTime = endTime;
+        appointment.status = "Rescheduled";
+        if (notes) appointment.notes = notes;
         await appointment.save();
-
-        res.status(200).json({ message: "Refunded successfully", appointment });
+        res.status(200).json({ message: "Rescheduled successfully", appointment });
     } catch (error: any) {
         res.status(500).json({ message: error.message });
     }
+};
+
+export const completeAppointment = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const appointment = await AppointmentModel.findById(id);
+
+        if (!appointment || !["Approved", "Rescheduled"].includes(appointment.status)) {
+            return res.status(400).json({ message: "Invalid appointment status for completion" });
+        }
+
+        appointment.status = "Completed";
+        await appointment.save();
+
+        // 🔥 Final re-fetch to ensure payments/remarks show up in the UI immediately
+        const finalAppt = await AppointmentModel.findById(id)
+            .populate("services.serviceId")
+            .populate("employee")
+            .populate("payments");
+
+        res.status(200).json({ message: "Completed", appointment: finalAppt });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const getAppointments = async (req: Request, res: Response) => {
+    try {
+        const { status, date, clientId } = req.query;
+        const filter: any = { isTemporary: false };
+        if (status) filter.status = status;
+        if (date) filter.date = new Date(date as string);
+        if (clientId) filter.clientId = clientId;
+
+        const appointments = await AppointmentModel.find(filter)
+            .populate("clientId", "firstname lastname email phone")
+            .populate({ path: "services.serviceId", model: "Service" })
+            .populate({ path: "employee", model: "Employee" })
+            .populate("payments").sort({ createdAt: -1 });
+        res.status(200).json({ count: appointments.length, appointments });
+    } catch (error: any) { res.status(500).json({ message: error.message }); }
+};
+
+export const getAppointmentById = async (req: Request, res: Response) => {
+    try {
+        const appointment = await AppointmentModel.findById(req.params.id)
+            .populate("clientId").populate("services.serviceId").populate("employee");
+        if (!appointment) return res.status(404).json({ message: "Not found" });
+        res.status(200).json({ appointment });
+    } catch (error: any) { res.status(500).json({ message: error.message }); }
+};
+
+export const getClientAppointments = async (req: Request, res: Response) => {
+    try {
+        const appointments = await AppointmentModel.find({ clientId: req.params.clientId, isTemporary: false })
+            .populate("services.serviceId").populate("employee").populate("payments").sort({ date: -1 });
+        res.status(200).json({ count: appointments.length, appointments });
+    } catch (error: any) { res.status(500).json({ message: error.message }); }
+};
+
+export const deleteTemporaryAppointment = async (req: Request, res: Response) => {
+    try {
+        await AppointmentModel.findOneAndDelete({ _id: req.params.id, isTemporary: true });
+        res.json({ message: "Deleted" });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+};
+
+export const refundAppointment = async (req: Request, res: Response) => {
+    try {
+        const appointment = await AppointmentModel.findById(req.params.id).populate("payments");
+        if (!appointment) return res.status(404).json({ message: "Not found" });
+        appointment.status = "Refunded";
+        await appointment.save();
+        res.status(200).json({ message: "Refunded", appointment });
+    } catch (error: any) { res.status(500).json({ message: error.message }); }
 };

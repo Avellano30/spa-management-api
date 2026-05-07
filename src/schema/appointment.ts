@@ -14,7 +14,7 @@ export interface IAppointment extends Document {
   notes?: string;
   isTemporary: boolean;
   expiresAt?: Date;
-  employee?: string;
+    employee?: mongoose.Types.ObjectId;
 }
 
 const AppointmentSchema = new Schema<IAppointment>(
