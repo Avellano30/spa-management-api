@@ -60,26 +60,45 @@ export const createAppointment = async (req: Request, res: Response) => {
         if (!isValidHours) return res.status(400).json({ message: "Outside operating hours" });
 
         // --- THERAPIST BUSY CHECK ---
-        if (employee) {
-            const therapistConflict = await AppointmentModel.findOne({
-                employee,
-                date,
-                status: { $in: ["Approved", "Rescheduled", "Pending"] },
-                isTemporary: { $ne: true },
-                startTime: { $lt: endTime },
-                endTime: { $gt: startTime },
-            });
-            if (therapistConflict) return res.status(400).json({ message: "The selected therapist is already busy at this time." });
-        }
+        // 1. Get the buffer (default to 15 if not in settings)
+        const buffer = settings.bufferTime ?? 15;
 
-        const roomOverlap = await AppointmentModel.countDocuments({
+// 2. Fetch all relevant bookings for this date once to save database calls
+        const existingBookings = await AppointmentModel.find({
             date,
             status: { $in: ["Approved", "Rescheduled", "Pending"] },
             isTemporary: { $ne: true },
-            startTime: { $lt: endTime },
-            endTime: { $gt: startTime },
         });
-        if (roomOverlap >= settings.totalRooms) return res.status(400).json({ message: "All rooms are booked." });
+
+// --- THERAPIST BUSY CHECK ---
+        if (employee) {
+            const therapistConflict = existingBookings.some(appt => {
+                // Only check bookings for the specific employee
+                if (String(appt.employee) !== String(employee)) return false;
+
+                const apptEndMin = toMinutes(appt.endTime) + buffer;
+                const apptEndWithBuffer = toHHMM(apptEndMin);
+
+                // Conflict if: New Start < Existing End+Buffer AND New End > Existing Start
+                return startTime < apptEndWithBuffer && endTime > appt.startTime;
+            });
+
+            if (therapistConflict) {
+                return res.status(400).json({ message: "The therapist is busy or in a cleanup period." });
+            }
+        }
+
+// --- ROOM OCCUPANCY CHECK ---
+        const roomOverlapCount = existingBookings.filter(appt => {
+            const apptEndMin = toMinutes(appt.endTime) + buffer;
+            const apptEndWithBuffer = toHHMM(apptEndMin);
+
+            return startTime < apptEndWithBuffer && endTime > appt.startTime;
+        }).length;
+
+        if (roomOverlapCount >= settings.totalRooms) {
+            return res.status(400).json({ message: "No rooms available (all occupied or being cleaned)." });
+        }
 
         const appointmentData: any = {
             clientId, services: validatedServices, date, startTime, endTime, notes, status: "Pending", isTemporary, employee,
@@ -144,18 +163,25 @@ export const cancelAppointment = async (req: Request, res: Response) => {
 
         if (String(isAdmin) === 'true') {
             const payment = (appointment as any).payments?.find((p: any) => p.status === "Completed" || p.status === "paid");
-            if (payment) {
-                const total = appointment.services.reduce((acc, curr) => acc + (curr.service.price || 0), 0);
-                const refundRes = await axios.post('https://api.paymongo.com/v1/refunds', {
-                    data: { attributes: { amount: total * 100, payment_id: payment.transactionId || payment.paymentId, reason: 'others', notes: `Admin Cancel: ${notes}` } }
-                }, {
-                    headers: { Authorization: `Basic ${Buffer.from(process.env.PAYMONGO_SECRET_KEY + ':').toString('base64')}` }
-                });
-                const refundRecord = await PaymentModel.create({
-                    appointmentId: id, amount: -total, method: "Online", type: "Refund", status: "Completed", transactionId: refundRes.data.data.id, remarks: `Refund: ${notes}`
-                });
-                await AppointmentModel.findByIdAndUpdate(id, { $push: { payments: refundRecord._id } });
-                appointment.status = "Refunded";
+            if (payment && (payment.transactionId || payment.paymentId)) {
+                // only attempt refund if we actually have a transaction ID
+                try {
+                    const total = appointment.services.reduce((acc, curr) => acc + (curr.service.price || 0), 0);
+                    const refundRes = await axios.post('https://api.paymongo.com/v1/refunds', {
+                        data: { attributes: { amount: total * 100, payment_id: payment.transactionId || payment.paymentId, reason: 'others', notes: `Admin Cancel: ${notes}` } }
+                    }, {
+                        headers: { Authorization: `Basic ${Buffer.from(process.env.PAYMONGO_SECRET_KEY + ':').toString('base64')}` }
+                    });
+                    const refundRecord = await PaymentModel.create({
+                        appointmentId: id, amount: -total, method: "Online", type: "Refund", status: "Completed", transactionId: refundRes.data.data.id, remarks: `Refund: ${notes}`
+                    });
+                    await AppointmentModel.findByIdAndUpdate(id, { $push: { payments: refundRecord._id } });
+                    appointment.status = "Refunded";
+                } catch (refundErr: any) {
+                    console.error("PayMongo refund failed:", refundErr.message);
+                    // Still cancel even if refund fails
+                    appointment.status = "Cancelled";
+                }
             } else {
                 appointment.status = "Cancelled";
             }
@@ -179,9 +205,11 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
         const { id } = req.params;
         const { date, startTime, notes } = req.body;
         if (!date || !startTime) return res.status(400).json({ message: "Date and time required" });
+
         const appointment = await AppointmentModel.findById(id);
         if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
+        // Calculate total duration
         let totalDuration = 0;
         for (const item of appointment.services) {
             const s = await ServiceModel.findById(item.serviceId);
@@ -192,6 +220,19 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
         const endMin = startMin + totalDuration;
         const endTime = toHHMM(endMin);
 
+        // Get settings for buffer and room count
+        const settings = await SpaSettingsModel.findOne();
+        const buffer = settings?.bufferTime ?? 15;
+
+        // Fetch all other bookings for that date (excluding the one being rescheduled)
+        const otherBookings = await AppointmentModel.find({
+            date,
+            _id: { $ne: id },
+            status: { $in: ["Approved", "Rescheduled", "Pending"] },
+            isTemporary: { $ne: true },
+        });
+
+        // --- THERAPIST BUSY CHECK (With Buffer) ---
         if (appointment.employee) {
             const employee = await EmployeeModel.findById(appointment.employee);
             if (employee) {
@@ -199,25 +240,34 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
                 if (!employee.schedule?.some((d: string) => d.toLowerCase() === dayOfWeek)) {
                     return res.status(400).json({ message: `${employee.name} does not work on ${dayOfWeek}.` });
                 }
-                const conflict = await AppointmentModel.findOne({
-                    employee: appointment.employee, _id: { $ne: id }, date,
-                    status: { $in: ["Approved", "Rescheduled", "Pending"] },
-                    startTime: { $lt: endTime }, endTime: { $gt: startTime },
+
+                const therapistConflict = otherBookings.some(appt => {
+                    if (String(appt.employee) !== String(appointment.employee)) return false;
+                    const apptEndWithBuffer = toHHMM(toMinutes(appt.endTime) + buffer);
+                    return startTime < apptEndWithBuffer && endTime > appt.startTime;
                 });
-                if (conflict) return res.status(400).json({ message: "Therapist is busy at this new time." });
+
+                if (therapistConflict) return res.status(400).json({ message: "Therapist is busy or in cleanup at this new time." });
             }
         }
 
-        const settings = await SpaSettingsModel.findOne();
-        const roomOverlap = await AppointmentModel.countDocuments({
-            date, _id: { $ne: id }, status: { $in: ["Approved", "Rescheduled", "Pending"] },
-            startTime: { $lt: endTime }, endTime: { $gt: startTime },
-        });
-        if (settings && roomOverlap >= settings.totalRooms) return res.status(400).json({ message: "All rooms full." });
+        // --- ROOM OCCUPANCY CHECK (With Buffer) ---
+        const roomOverlapCount = otherBookings.filter(appt => {
+            const apptEndWithBuffer = toHHMM(toMinutes(appt.endTime) + buffer);
+            return startTime < apptEndWithBuffer && endTime > appt.startTime;
+        }).length;
 
-        appointment.date = date; appointment.startTime = startTime; appointment.endTime = endTime;
+        if (settings && roomOverlapCount >= settings.totalRooms) {
+            return res.status(400).json({ message: "All rooms are full or being cleaned at this new time." });
+        }
+
+        // Update and save
+        appointment.date = date;
+        appointment.startTime = startTime;
+        appointment.endTime = endTime;
         appointment.status = "Rescheduled";
         if (notes) appointment.notes = notes;
+
         await appointment.save();
         res.status(200).json({ message: "Rescheduled successfully", appointment });
     } catch (error: any) {
@@ -298,4 +348,30 @@ export const refundAppointment = async (req: Request, res: Response) => {
         await appointment.save();
         res.status(200).json({ message: "Refunded", appointment });
     } catch (error: any) { res.status(500).json({ message: error.message }); }
+};
+
+export const getOccupancyData = async (req: Request, res: Response) => {
+    const { date } = req.query;
+
+    const settings = await SpaSettingsModel.findOne();
+
+    const startOfDay = new Date(`${date}T00:00:00.000+08:00`);
+    const endOfDay = new Date(`${date}T23:59:59.999+08:00`);
+
+    const appointments = await AppointmentModel.find({
+        date: { $gte: startOfDay, $lte: endOfDay },
+        status: { $in: ["Approved", "Pending", "Rescheduled"] },
+        isTemporary: { $ne: true },
+    });
+
+
+
+
+    res.json({
+        openingTime: settings?.openingTime,
+        closingTime: settings?.closingTime,
+        totalRooms: settings?.totalRooms,
+        bufferTime: settings?.bufferTime ?? 15,
+        bookings: appointments.map(a => ({ start: a.startTime, end: a.endTime })),
+    });
 };

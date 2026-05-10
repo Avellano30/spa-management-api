@@ -260,7 +260,7 @@ export const createPaymongoPaymentSession = async (
       {
         data: {
           attributes: {
-            payment_method_types: ["gcash", "paymaya", "card"],
+            payment_method_types: ["gcash", "paymaya"],
             external_reference_number: appointmentId,
             description: `Payment for ${appointment.services.map((s: any) => s.service.name).join(", ")} (${type})`,
             metadata: { type, appointmentId },

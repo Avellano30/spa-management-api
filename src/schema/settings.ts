@@ -5,6 +5,7 @@ export interface ISpaSettings extends Document {
 	downPayment: number;
     openingTime: string; // e.g. "09:00"
 	closingTime: string; // e.g. "20:00"
+    bufferTime: number;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -15,6 +16,7 @@ const SpaSettingsSchema = new Schema<ISpaSettings>(
         downPayment: { type: Number, required: true, default: 30},
 		openingTime: { type: String, default: "09:00" },
 		closingTime: { type: String, default: "20:00" },
+        bufferTime: { type: Number, default: 15 },
 	},
 	{ timestamps: true, collection: "spa_settings" }
 );

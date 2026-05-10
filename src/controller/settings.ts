@@ -29,13 +29,13 @@ export const createSpaSettings = async (req: Request, res: Response) => {
             return res.status(400).json({ message: "Settings already exist" });
         }
 
-        const { totalRooms, openingTime, closingTime, downPayment } = req.body;
-
+        const { totalRooms, openingTime, closingTime, downPayment, bufferTime } = req.body;
         const newSettings = await SpaSettingsModel.create({
             totalRooms,
             openingTime,
             closingTime,
             downPayment: downPayment ?? 30,
+            bufferTime: bufferTime ?? 15,
         });
 
         res.status(201).json(newSettings);
@@ -46,7 +46,7 @@ export const createSpaSettings = async (req: Request, res: Response) => {
 
 export const updateSpaSettings = async (req: Request, res: Response) => {
     try {
-        const { totalRooms, openingTime, closingTime, downPayment } = req.body;
+        const { totalRooms, openingTime, closingTime, downPayment, bufferTime } = req.body; // 👈 added bufferTime
 
         if (totalRooms !== undefined && totalRooms < 1)
             return res.status(400).json({ message: "Total rooms must be at least 1" });
@@ -61,6 +61,7 @@ export const updateSpaSettings = async (req: Request, res: Response) => {
                 downPayment: 30,
                 openingTime: "09:00",
                 closingTime: "20:00",
+                bufferTime: 15, // 👈 added
             }));
 
         const newOpeningTime = openingTime || existingSettings.openingTime;
@@ -76,12 +77,12 @@ export const updateSpaSettings = async (req: Request, res: Response) => {
         if (duration < 60)
             return res.status(400).json({ message: "Operating hours must be at least 1 hour long" });
 
-        // Build the update object dynamically
         const updateData: Record<string, any> = {};
         if (totalRooms !== undefined) updateData.totalRooms = totalRooms;
         if (openingTime) updateData.openingTime = openingTime;
         if (closingTime) updateData.closingTime = closingTime;
         if (downPayment !== undefined) updateData.downPayment = downPayment;
+        if (bufferTime !== undefined) updateData.bufferTime = bufferTime; // 👈 added
 
         const updatedSettings = await SpaSettingsModel.findOneAndUpdate(
             {},
