@@ -54,7 +54,7 @@ export const clientSignIn = async (req: Request, res: Response) => {
                 const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(gmail)}`;
 
                 await transporter.sendMail({
-                    from: "eliaschan989@gmail.com",
+                    from: process.env.SMTP_FROM,
                     to: gmail,
                     subject: "Verify Your Email",
                     html: EmailVerification({ name: decoded.given_name, link: verificationLink }),
@@ -171,10 +171,11 @@ export const clientSignUp = async (req: Request, res: Response) => {
         });
 
         // Send verification email
+        // Send verification email
         const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
 
         await transporter.sendMail({
-            from: "eliaschan989@gmail.com",
+            from: process.env.SMTP_FROM,  // ✅ fix: was "eliaschan989@gmail.com"
             to: email,
             subject: "Verify Your Email",
             html: EmailVerification({ name: firstname, link: verificationLink }),
@@ -189,7 +190,6 @@ export const clientSignUp = async (req: Request, res: Response) => {
         return res.sendStatus(400);
     }
 };
-
 export const getClients = async (req: Request, res: Response) => {
     try {
         const clients = await getUsers();
