@@ -4,10 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="adjusted status for rescheduled employees">
-      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" />
+    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="fixed signup for users.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controller/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller/client.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/config/nodemailer.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/config/nodemailer.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -173,7 +172,13 @@
       <workItem from="1778132299826" duration="3530000" />
       <workItem from="1778289084627" duration="432000" />
       <workItem from="1778319715637" duration="10476000" />
-      <workItem from="1778469973240" duration="3261000" />
+      <workItem from="1778469973240" duration="3533000" />
+      <workItem from="1778482131286" duration="652000" />
+      <workItem from="1778484189397" duration="303000" />
+      <workItem from="1778484509902" duration="37000" />
+      <workItem from="1778485233188" duration="1334000" />
+      <workItem from="1778493054392" duration="369000" />
+      <workItem from="1778542214830" duration="165000" />
     </task>
     <task id="LOCAL-00001" summary="Remove multer-storage-cloudinary due to conflict">
       <option name="closed" value="true" />
@@ -263,7 +268,15 @@
       <option name="project" value="LOCAL" />
       <updated>1773987056135</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="fixed signup for users.">
+      <option name="closed" value="true" />
+      <created>1778473976239</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1778473976239</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -292,6 +305,7 @@
     <MESSAGE value="Support overnight operating hours" />
     <MESSAGE value="commented overlapping time." />
     <MESSAGE value="fixed employee management, and reschedule function." />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed employee management, and reschedule function." />
+    <MESSAGE value="fixed signup for users." />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed signup for users." />
   </component>
 </project>
