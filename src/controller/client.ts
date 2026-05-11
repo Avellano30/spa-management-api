@@ -4,7 +4,8 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import crypto from 'crypto';
 import { createUser, deleteUserById, getUserByEmail, getUserById, getUserByUsername, getUsers, updateUserById } from '../schema/client';
 import { EmailVerification } from "../templates/email/emailVerification";
-import { transporter } from "../config/nodemailer";
+// import { transporter } from "../config/nodemailer";
+import { sendEmail } from "../config/brevo";
 
 
 const random = () => crypto.randomBytes(128).toString('base64');
@@ -53,12 +54,12 @@ export const clientSignIn = async (req: Request, res: Response) => {
                 // Send verification email
                 const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(gmail)}`;
 
-                await transporter.sendMail({
-                    from: process.env.SMTP_FROM,
-                    to: gmail,
-                    subject: "Verify Your Email",
-                    html: EmailVerification({ name: decoded.given_name, link: verificationLink }),
-                });
+                await sendEmail(
+                    gmail,
+                    "Verify Your Email",
+                    EmailVerification({ name: decoded.given_name, link: verificationLink }),
+                    decoded.given_name
+                );
 
                 return res.status(200).json({
                     redirect: "/email-verification?email=" + encodeURIComponent(gmail),
@@ -174,12 +175,12 @@ export const clientSignUp = async (req: Request, res: Response) => {
         // Send verification email
         const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
 
-        await transporter.sendMail({
-            from: process.env.SMTP_FROM,  // ✅ fix: was "eliaschan989@gmail.com"
-            to: email,
-            subject: "Verify Your Email",
-            html: EmailVerification({ name: firstname, link: verificationLink }),
-        });
+        await sendEmail(
+            email,
+            "Verify Your Email",
+            EmailVerification({ name: firstname, link: verificationLink }),
+            firstname
+        );
 
         return res.status(200).json({
             redirect: "/email-verification?email=" + encodeURIComponent(email),

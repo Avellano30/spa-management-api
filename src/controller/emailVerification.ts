@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import crypto from "crypto";
 import { ClientModel } from "../schema/client";
-import { transporter } from "../config/nodemailer";
+import { sendEmail } from "../config/brevo";
 import { EmailVerification } from "../templates/email/emailVerification";
 
 /**
@@ -35,8 +35,13 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
 	};
 
 	try {
-		await transporter.sendMail(mailOptions);
-		res.status(200).json({ message: "Verification email sent" });
+        await sendEmail(
+            email,
+            "Verify Your Email",
+            EmailVerification({ name: user.firstname, link: verificationUrl }),
+            user.firstname
+        );
+
 	} catch (error) {
 		console.error(error);
 		res.status(500).json({ message: "Failed to send verification email" });
