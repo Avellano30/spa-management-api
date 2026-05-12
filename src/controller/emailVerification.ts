@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import crypto from "crypto";
 import { ClientModel } from "../schema/client";
-import { sendEmail } from "../config/brevo";
+import { sendEmail,getSpaName } from "../config/brevo";
 import { EmailVerification } from "../templates/email/emailVerification";
 import jwt from "jsonwebtoken";
 /**
@@ -26,19 +26,14 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
 
 	// Construct verification link
 	const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+    const spaName = await getSpaName();
 
-	const mailOptions = {
-		from: process.env.SMTP_FROM,
-		to: email,
-		subject: "Verify Your Email",
-		html: EmailVerification({ name: user.firstname, link: verificationUrl }),
-	};
 
 	try {
         await sendEmail(
             email,
             "Verify Your Email",
-            EmailVerification({ name: user.firstname, link: verificationUrl }),
+            EmailVerification({ name: user.firstname, link: verificationUrl,spaName }),
             user.firstname
         );
 
