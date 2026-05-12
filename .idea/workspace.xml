@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="adjusted email verification to redirect as logged in.">
+    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="adjusted email name to match the spa name.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/config/brevo.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/config/brevo.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controller/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller/client.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/templates/email/emailVerification.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/templates/email/emailVerification.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -182,7 +184,7 @@
       <workItem from="1778485233188" duration="1334000" />
       <workItem from="1778493054392" duration="369000" />
       <workItem from="1778542214830" duration="4515000" />
-      <workItem from="1778548116942" duration="220000" />
+      <workItem from="1778548116942" duration="910000" />
     </task>
     <task id="LOCAL-00001" summary="Remove multer-storage-cloudinary due to conflict">
       <option name="closed" value="true" />
@@ -312,7 +314,15 @@
       <option name="project" value="LOCAL" />
       <updated>1778547014538</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="adjusted email name to match the spa name.">
+      <option name="closed" value="true" />
+      <created>1778548374969</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1778548374969</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -346,6 +356,7 @@
     <MESSAGE value="email verification fix 2" />
     <MESSAGE value="email verification fix for controller." />
     <MESSAGE value="adjusted email verification to redirect as logged in." />
-    <option name="LAST_COMMIT_MESSAGE" value="adjusted email verification to redirect as logged in." />
+    <MESSAGE value="adjusted email name to match the spa name." />
+    <option name="LAST_COMMIT_MESSAGE" value="adjusted email name to match the spa name." />
   </component>
 </project>

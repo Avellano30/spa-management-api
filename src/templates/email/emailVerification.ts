@@ -1,9 +1,10 @@
 export interface EmailVerificationProps {
-  name: string;
-  link: string;
+    name: string;
+    link: string;
+    spaName: string; // ← add this
 }
 
-export const EmailVerification = ({ name, link }: EmailVerificationProps) => `
+export const EmailVerification = ({ name, link, spaName }: EmailVerificationProps) => `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
   <h2 style="color: #1c7ed6; text-align: center;">Verify Your Email</h2>
   
@@ -12,7 +13,7 @@ export const EmailVerification = ({ name, link }: EmailVerificationProps) => `
   </p>
 
   <p style="font-size: 16px; line-height: 1.5; color: #333;">
-    Thank you for registering with <strong>Serenity Spa</strong>. To complete your registration and activate your account, please verify your email address by clicking the button below:
+    Thank you for registering with <strong>${spaName}</strong>. To complete your registration and activate your account, please verify your email address by clicking the button below:
   </p>
 
   <div style="text-align: center; margin: 20px 0;">
@@ -31,7 +32,7 @@ export const EmailVerification = ({ name, link }: EmailVerificationProps) => `
   <hr style="margin: 20px 0; border: 0; border-top: 1px solid #e0e0e0;" />
 
   <p style="font-size: 12px; color: #888; text-align: center;">
-    Serenity Spa &copy; ${new Date().getFullYear()}
+    ${spaName} &copy; ${new Date().getFullYear()}
   </p>
 </div>
 `;

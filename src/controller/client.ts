@@ -5,8 +5,7 @@ import crypto from 'crypto';
 import { createUser, deleteUserById, getUserByEmail, getUserById, getUserByUsername, getUsers, updateUserById } from '../schema/client';
 import { EmailVerification } from "../templates/email/emailVerification";
 // import { transporter } from "../config/nodemailer";
-import { sendEmail } from "../config/brevo";
-
+import { sendEmail, getSpaName } from "../config/brevo";
 
 const random = () => crypto.randomBytes(128).toString('base64');
 
@@ -53,11 +52,12 @@ export const clientSignIn = async (req: Request, res: Response) => {
 
                 // Send verification email
                 const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(gmail)}`;
+                const spaName = await getSpaName();
 
                 await sendEmail(
                     gmail,
                     "Verify Your Email",
-                    EmailVerification({ name: decoded.given_name, link: verificationLink }),
+                    EmailVerification({ name: decoded.given_name, link: verificationLink,spaName }),
                     decoded.given_name
                 );
 
@@ -71,10 +71,12 @@ export const clientSignIn = async (req: Request, res: Response) => {
             if (!user.verified) {
                 // Resend verification email
                 const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${user.verificationToken}&email=${encodeURIComponent(gmail)}`;
+                const spaName = await getSpaName();
+
                 await sendEmail(
                     gmail,
                     "Verify Your Email",
-                    EmailVerification({ name: user.firstname, link: verificationLink }),
+                    EmailVerification({ name: user.firstname, link: verificationLink,spaName }),
                     user.firstname
                 );
 
@@ -183,11 +185,12 @@ export const clientSignUp = async (req: Request, res: Response) => {
         // Send verification email
         // Send verification email
         const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
+        const spaName = await getSpaName();
 
         await sendEmail(
             email,
             "Verify Your Email",
-            EmailVerification({ name: firstname, link: verificationLink }),
+            EmailVerification({ name: firstname, link: verificationLink,spaName }),
             firstname
         );
 
