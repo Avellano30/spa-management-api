@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="email verification fix 2">
+    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="email verification fix for controller.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controller/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller/client.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controller/emailVerification.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller/emailVerification.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -181,7 +181,7 @@
       <workItem from="1778484509902" duration="37000" />
       <workItem from="1778485233188" duration="1334000" />
       <workItem from="1778493054392" duration="369000" />
-      <workItem from="1778542214830" duration="2125000" />
+      <workItem from="1778542214830" duration="3643000" />
     </task>
     <task id="LOCAL-00001" summary="Remove multer-storage-cloudinary due to conflict">
       <option name="closed" value="true" />
@@ -295,7 +295,15 @@
       <option name="project" value="LOCAL" />
       <updated>1778543713124</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="email verification fix for controller.">
+      <option name="closed" value="true" />
+      <created>1778544363224</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1778544363224</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -327,6 +335,7 @@
     <MESSAGE value="fixed signup for users." />
     <MESSAGE value="email service adjustment" />
     <MESSAGE value="email verification fix 2" />
-    <option name="LAST_COMMIT_MESSAGE" value="email verification fix 2" />
+    <MESSAGE value="email verification fix for controller." />
+    <option name="LAST_COMMIT_MESSAGE" value="email verification fix for controller." />
   </component>
 </project>

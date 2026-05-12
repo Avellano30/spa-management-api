@@ -3,7 +3,7 @@ import crypto from "crypto";
 import { ClientModel } from "../schema/client";
 import { sendEmail } from "../config/brevo";
 import { EmailVerification } from "../templates/email/emailVerification";
-
+import jwt from "jsonwebtoken";
 /**
  * Resend verification email to user
  */
@@ -52,22 +52,31 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
  * Verify user's email
  */
 export const verifyEmail = async (req: Request, res: Response) => {
-	const { token } = req.params;
+    const { token } = req.params;
 
-	if (!token) return res.status(400).json({ message: "Invalid request" });
+    if (!token) return res.status(400).json({ message: "Invalid request" });
 
-	const user = await ClientModel.findOne({
-		verificationToken: token as string,
-		verificationExpires: { $gt: new Date() }, // token not expired
-	});
+    const user = await ClientModel.findOne({
+        verificationToken: token as string,
+        verificationExpires: { $gt: new Date() },
+    });
 
-	if (!user) return res.status(400).json({ message: "Invalid or expired token" });
+    if (!user) return res.status(400).json({ message: "Invalid or expired token" });
 
-	user.verified = true;
-	user.verificationToken = undefined;
-	user.verificationExpires = undefined;
+    user.verified = true;
+    user.verificationToken = undefined;
+    user.verificationExpires = undefined;
 
-	await user.save();
+    await user.save();
 
-	res.status(200).json({ message: "Email verified successfully" });
+    // Generate session token
+    const sessionToken = jwt.sign({ userId: user._id }, `${process.env.SECRET_KEY}`, { expiresIn: '3h' });
+
+    res.status(200).json({
+        message: "Email verified successfully",
+        token: sessionToken,
+        firstName: user.firstname,
+        lastName: user.lastname,
+        email: user.email,
+    });
 };
