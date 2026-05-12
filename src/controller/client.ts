@@ -11,7 +11,7 @@ import { sendEmail } from "../config/brevo";
 const random = () => crypto.randomBytes(128).toString('base64');
 
 const authentication = (salt: string, password: string) => {
-    return crypto.createHmac('sha256', [salt, password].join('/')).update(`${process.env.PASSWORD_SECRET}`).digest('hex');;
+    return crypto.createHmac('sha256', [salt, password].join('/')).update(`${process.env.PASSWORD_SECRET}`).digest('hex');
 }
 
 export const clientSignIn = async (req: Request, res: Response) => {
@@ -69,6 +69,15 @@ export const clientSignIn = async (req: Request, res: Response) => {
 
             // Check verification
             if (!user.verified) {
+                // Resend verification email
+                const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${user.verificationToken}&email=${encodeURIComponent(gmail)}`;
+                await sendEmail(
+                    gmail,
+                    "Verify Your Email",
+                    EmailVerification({ name: user.firstname, link: verificationLink }),
+                    user.firstname
+                );
+
                 return res.status(403).json({
                     redirect: "/email-verification?email=" + encodeURIComponent(gmail),
                     message: "Email not verified. Please check your inbox to verify your email.",
