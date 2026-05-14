@@ -6,7 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="adjusted email name to match the spa name fixed spaname on email verif controller.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controller/emailVerification.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller/emailVerification.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controller/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller/client.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/router/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/router/client.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -182,7 +183,10 @@
       <workItem from="1778485233188" duration="1334000" />
       <workItem from="1778493054392" duration="369000" />
       <workItem from="1778542214830" duration="4515000" />
-      <workItem from="1778548116942" duration="1106000" />
+      <workItem from="1778548116942" duration="1880000" />
+      <workItem from="1778639355092" duration="1265000" />
+      <workItem from="1778649636708" duration="1328000" />
+      <workItem from="1778730442810" duration="1738000" />
     </task>
     <task id="LOCAL-00001" summary="Remove multer-storage-cloudinary due to conflict">
       <option name="closed" value="true" />
@@ -328,7 +332,15 @@
       <option name="project" value="LOCAL" />
       <updated>1778549057806</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="adjusted email name to match the spa name fixed spaname on email verif controller.">
+      <option name="closed" value="true" />
+      <created>1778549232847</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1778549232847</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

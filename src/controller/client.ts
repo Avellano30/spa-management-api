@@ -250,3 +250,22 @@ export const deleteClient = async (req: Request, res: Response) => {
         return res.sendStatus(400);
     }
 };
+export const getClient = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            return res.status(400).json({ message: "Client ID is required." });
+        }
+
+        const client = await getUserById(id);
+        if (!client) {
+            return res.status(404).json({ message: "Client not found." });
+        }
+
+        return res.status(200).json(client);
+    } catch (err) {
+        console.error(err);
+        return res.sendStatus(400);
+    }
+};
