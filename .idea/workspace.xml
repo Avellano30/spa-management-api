@@ -4,10 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="adjusted email name to match the spa name fixed spaname on email verif controller.">
+    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="added account settings in client side.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controller/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller/client.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/router/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/router/client.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controller/appointment.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller/appointment.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/router/appointment.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/router/appointment.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -186,7 +186,9 @@
       <workItem from="1778548116942" duration="1880000" />
       <workItem from="1778639355092" duration="1265000" />
       <workItem from="1778649636708" duration="1328000" />
-      <workItem from="1778730442810" duration="1738000" />
+      <workItem from="1778730442810" duration="2386000" />
+      <workItem from="1778757809610" duration="1019000" />
+      <workItem from="1778758843811" duration="608000" />
     </task>
     <task id="LOCAL-00001" summary="Remove multer-storage-cloudinary due to conflict">
       <option name="closed" value="true" />
@@ -340,7 +342,15 @@
       <option name="project" value="LOCAL" />
       <updated>1778549232847</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="added account settings in client side.">
+      <option name="closed" value="true" />
+      <created>1778734540623</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1778734540623</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -377,6 +387,7 @@
     <MESSAGE value="adjusted email name to match the spa name." />
     <MESSAGE value="adjusted email name to match the spa name 2" />
     <MESSAGE value="adjusted email name to match the spa name fixed spaname on email verif controller." />
-    <option name="LAST_COMMIT_MESSAGE" value="adjusted email name to match the spa name fixed spaname on email verif controller." />
+    <MESSAGE value="added account settings in client side." />
+    <option name="LAST_COMMIT_MESSAGE" value="added account settings in client side." />
   </component>
 </project>

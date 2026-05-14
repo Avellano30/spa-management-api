@@ -375,3 +375,112 @@ export const getOccupancyData = async (req: Request, res: Response) => {
         bookings: appointments.map(a => ({ start: a.startTime, end: a.endTime })),
     });
 };
+export const getMonthlyAvailability = async (req: Request, res: Response) => {
+    try {
+        const { month } = req.query; // expects "2026-05"
+        if (!month) return res.status(400).json({ message: "Month required" });
+
+        const settings = await SpaSettingsModel.findOne();
+        if (!settings) return res.status(500).json({ message: "Settings not configured" });
+
+        const employees = await EmployeeModel.find({ status: "available" });
+        const { openingTime, closingTime, totalRooms, bufferTime = 15 } = settings;
+
+        // Generate all days in the month
+        const start = new Date(`${month}-01`);
+        const end = new Date(start);
+        end.setMonth(end.getMonth() + 1);
+
+        const result: Record<string, "open" | "full"> = {};
+
+        // Loop through each day
+        const current = new Date(start);
+        while (current < end) {
+            const dateStr = current.toISOString().split("T")[0];
+            const dayOfWeek = current.toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
+
+            // Get available employees for this day
+            const availableEmployees = employees.filter((emp) =>
+                emp.schedule?.some((d: string) => d.toLowerCase() === dayOfWeek)
+            );
+
+            if (availableEmployees.length === 0) {
+                result[dateStr] = "full";
+                current.setDate(current.getDate() + 1);
+                continue;
+            }
+
+            // Get all appointments for this day
+            const startOfDay = new Date(`${dateStr}T00:00:00.000+08:00`);
+            const endOfDay = new Date(`${dateStr}T23:59:59.999+08:00`);
+
+            const appointments = await AppointmentModel.find({
+                date: { $gte: startOfDay, $lte: endOfDay },
+                status: { $in: ["Approved", "Pending", "Rescheduled"] },
+                isTemporary: { $ne: true },
+            });
+
+            // Generate hourly slots
+            const slots: string[] = [];
+            const openMin = toMinutes(openingTime);
+            const closeMin = toMinutes(closingTime);
+            const isOvernight = closeMin < openMin;
+            const totalMins = isOvernight
+                ? 24 * 60 - openMin + closeMin
+                : closeMin - openMin;
+
+            for (let i = 0; i < totalMins; i += 60) {
+                const slotMin = (openMin + i) % (24 * 60);
+                slots.push(toHHMM(slotMin));
+            }
+
+            // Check if any slot has availability
+            let hasAvailability = false;
+
+            for (const slot of slots) {
+                // Check bed availability
+                const overlapping = appointments.filter((appt) => {
+                    const check = toMinutes(slot);
+                    const start = toMinutes(appt.startTime);
+                    const end = (toMinutes(appt.endTime) + bufferTime) % (24 * 60);
+                    if (start < end) {
+                        return check >= start && check < end;
+                    } else {
+                        return check >= start || check < end;
+                    }
+                }).length;
+
+                if (overlapping >= totalRooms) continue; // all beds full
+
+                // Check if any available employee is free at this slot
+                const anyTherapistFree = availableEmployees.some((emp) => {
+                    const empBooked = appointments.some((appt) => {
+                        const apptEmpId = appt.employee?.toString();
+                        if (apptEmpId !== String(emp._id)) return false;
+                        const check = toMinutes(slot);
+                        const start = toMinutes(appt.startTime);
+                        const end = (toMinutes(appt.endTime) + bufferTime) % (24 * 60);
+                        if (start < end) {
+                            return check >= start && check < end;
+                        } else {
+                            return check >= start || check < end;
+                        }
+                    });
+                    return !empBooked;
+                });
+
+                if (anyTherapistFree) {
+                    hasAvailability = true;
+                    break;
+                }
+            }
+
+            result[dateStr] = hasAvailability ? "open" : "full";
+            current.setDate(current.getDate() + 1);
+        }
+
+        res.json(result);
+    } catch (error: any) {
+        res.status(500).json({ message: error.message });
+    }
+};

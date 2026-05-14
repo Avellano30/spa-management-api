@@ -1,4 +1,5 @@
 import express from "express";
+import { getMonthlyAvailability } from "../controller/appointment";
 
 import {
 	createAppointment,
@@ -21,6 +22,8 @@ export default (router: express.Router) => {
     router.get("/appointment", getAppointments);
     router.get("/appointment/occupancy", getOccupancyData);      // ✅ specific routes first
     router.get("/appointment/client/:clientId", getClientAppointments); // ✅ moved up
+    router.get("/appointment/monthly-availability", getMonthlyAvailability);
+
     router.get("/appointment/:id", getAppointmentById);          // wildcard last
     router.patch("/appointment/:id", updateAppointment);
     router.patch("/appointment/:id/approve", approveAppointment);
