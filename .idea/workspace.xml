@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="made the client calendar read a date if it's full or not.">
+    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="adjusted client calendar badges to be more functional">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/controller/appointment.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller/appointment.ts" afterDir="false" />
     </list>
@@ -191,7 +191,7 @@
       <workItem from="1778759480871" duration="930000" />
       <workItem from="1778802398013" duration="628000" />
       <workItem from="1778805352107" duration="175000" />
-      <workItem from="1778810398678" duration="2965000" />
+      <workItem from="1778810398678" duration="3412000" />
     </task>
     <task id="LOCAL-00001" summary="Remove multer-storage-cloudinary due to conflict">
       <option name="closed" value="true" />
@@ -361,7 +361,15 @@
       <option name="project" value="LOCAL" />
       <updated>1778759603185</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="adjusted client calendar badges to be more functional">
+      <option name="closed" value="true" />
+      <created>1778815016406</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1778815016406</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -400,6 +408,7 @@
     <MESSAGE value="adjusted email name to match the spa name fixed spaname on email verif controller." />
     <MESSAGE value="added account settings in client side." />
     <MESSAGE value="made the client calendar read a date if it's full or not." />
-    <option name="LAST_COMMIT_MESSAGE" value="made the client calendar read a date if it's full or not." />
+    <MESSAGE value="adjusted client calendar badges to be more functional" />
+    <option name="LAST_COMMIT_MESSAGE" value="adjusted client calendar badges to be more functional" />
   </component>
 </project>

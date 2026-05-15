@@ -469,7 +469,6 @@ export const getMonthlyAvailability = async (req: Request, res: Response) => {
                     // Since we don't know service duration here, use at least 1 min as minimum
                     return slot < apptEndWithBuffer && slot >= appt.startTime;
                 }).length;
-                console.log(`[${dateStr}] slot=${slot}, overlapping=${overlapping}, totalRooms=${totalRooms}`);
 
                 if (overlapping >= totalRooms) continue;
 
@@ -481,18 +480,15 @@ export const getMonthlyAvailability = async (req: Request, res: Response) => {
                         const apptEndWithBuffer = toHHMM(toMinutes(appt.endTime) + bufferTime);
                         return slot < apptEndWithBuffer && slot >= appt.startTime;
                     });
-                    console.log(`  emp=${emp.name}, empBooked=${empBooked}`);
 
                     return !empBooked;
                 });
-                console.log(`  anyTherapistFree=${anyTherapistFree}`);
 
                 if (anyTherapistFree) {
                     hasAvailability = true;
                     break;
                 }
             }
-            console.log(`[${dateStr}] result=${hasAvailability ? "open" : "full"}`);
 
 
             result[dateStr] = hasAvailability ? "open" : "full";
