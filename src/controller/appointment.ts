@@ -383,6 +383,9 @@ export const getMonthlyAvailability = async (req: Request, res: Response) => {
         const settings = await SpaSettingsModel.findOne();
         if (!settings) return res.status(500).json({ message: "Settings not configured" });
 
+        const shortestService = await ServiceModel.findOne({ status: "available" }).sort({ duration: 1 });
+        const minServiceDuration = shortestService?.duration ?? 20;
+
         const employees = await EmployeeModel.find({ status: "available" });
         const { openingTime, closingTime, totalRooms, bufferTime = 15 } = settings;
 
@@ -434,46 +437,63 @@ export const getMonthlyAvailability = async (req: Request, res: Response) => {
                 slots.push(toHHMM(slotMin));
             }
 
+            // After generating hourly slots, also add post-booking slots
+            const dayAppointments = appointments; // already fetched
+            dayAppointments.forEach((appt) => {
+                const bufferEndMin = toMinutes(appt.endTime) + bufferTime;
+                const slotMin = bufferEndMin % (24 * 60);
+                const bufferEndSlot = toHHMM(slotMin);
+
+                const isWithinHours = closeMin > openMin
+                    ? slotMin >= openMin && slotMin < closeMin
+                    : slotMin >= openMin || slotMin < closeMin;
+
+                const fitsBeforeClose = closeMin > openMin
+                    ? slotMin + minServiceDuration <= closeMin
+                    : slotMin + minServiceDuration <= closeMin + 24 * 60;
+
+                if (isWithinHours && fitsBeforeClose && !slots.includes(bufferEndSlot)) {
+                    slots.push(bufferEndSlot);
+                }
+            });
+            slots.sort();
+
             // Check if any slot has availability
             let hasAvailability = false;
 
             for (const slot of slots) {
-                // Check bed availability
+                // Check bed availability — mirror createAppointment logic
                 const overlapping = appointments.filter((appt) => {
-                    const check = toMinutes(slot);
-                    const start = toMinutes(appt.startTime);
-                    const end = (toMinutes(appt.endTime) + bufferTime) % (24 * 60);
-                    if (start < end) {
-                        return check >= start && check < end;
-                    } else {
-                        return check >= start || check < end;
-                    }
+                    const apptEndWithBuffer = toHHMM(toMinutes(appt.endTime) + bufferTime);
+                    // A slot is blocked if: slot < apptEnd+buffer AND slotEnd > apptStart
+                    // Since we don't know service duration here, use at least 1 min as minimum
+                    return slot < apptEndWithBuffer && slot >= appt.startTime;
                 }).length;
+                console.log(`[${dateStr}] slot=${slot}, overlapping=${overlapping}, totalRooms=${totalRooms}`);
 
-                if (overlapping >= totalRooms) continue; // all beds full
+                if (overlapping >= totalRooms) continue;
 
-                // Check if any available employee is free at this slot
+            // Check therapist availability using the same logic
                 const anyTherapistFree = availableEmployees.some((emp) => {
                     const empBooked = appointments.some((appt) => {
-                        const apptEmpId = appt.employee?.toString();
-                        if (apptEmpId !== String(emp._id)) return false;
-                        const check = toMinutes(slot);
-                        const start = toMinutes(appt.startTime);
-                        const end = (toMinutes(appt.endTime) + bufferTime) % (24 * 60);
-                        if (start < end) {
-                            return check >= start && check < end;
-                        } else {
-                            return check >= start || check < end;
-                        }
+                        if (!appt.employee) return false; // skip unassigned
+                        if (appt.employee.toString() !== String(emp._id)) return false;
+                        const apptEndWithBuffer = toHHMM(toMinutes(appt.endTime) + bufferTime);
+                        return slot < apptEndWithBuffer && slot >= appt.startTime;
                     });
+                    console.log(`  emp=${emp.name}, empBooked=${empBooked}`);
+
                     return !empBooked;
                 });
+                console.log(`  anyTherapistFree=${anyTherapistFree}`);
 
                 if (anyTherapistFree) {
                     hasAvailability = true;
                     break;
                 }
             }
+            console.log(`[${dateStr}] result=${hasAvailability ? "open" : "full"}`);
+
 
             result[dateStr] = hasAvailability ? "open" : "full";
             current.setDate(current.getDate() + 1);
