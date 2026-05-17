@@ -4,12 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="console logs cleanup">
-      <change afterPath="$PROJECT_DIR$/preview.ts" afterDir="false" />
+    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="fixed email verification and password reset UI. Also adjusted password reset functions.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/controller/reset_password.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller/reset_password.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/templates/email/emailVerification.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/templates/email/emailVerification.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/templates/email/reset_password.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/templates/email/reset_password.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

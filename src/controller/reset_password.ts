@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { ClientModel } from "../schema/client";
 import crypto from "crypto";
-import { transporter } from "../config/nodemailer";
+import { sendEmail } from "../config/brevo";
 import { ResetPasswordEmail } from "../templates/email/reset_password";
 import { HomepageModel } from "../schema/homepage";
 // ------------------------------
@@ -47,15 +47,10 @@ export const validateResetToken = async (token: string) => {
 // EMAIL SENDER USING BREVO
 // ------------------------------
 
-export const sendResetPasswordEmail = async (email: string, name: string, link: string,spaName: string) => {
+export const sendResetPasswordEmail = async (email: string, name: string, link: string, spaName: string) => {
     const html = ResetPasswordEmail({ name, link, spaName });
 
-    await transporter.sendMail({
-        from: process.env.SMTP_FROM,
-        to: email,
-        subject: "Reset Your Password",
-        html,
-    });
+    await sendEmail(email, "Reset Your Password", html, name);
 };
 
 // ------------------------------
