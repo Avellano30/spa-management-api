@@ -4,9 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="adjusted client calendar badges to be more functional">
+    <list default="true" id="8f476359-91e6-4b9b-82e7-efe1c1c3c569" name="Changes" comment="console logs cleanup">
+      <change afterPath="$PROJECT_DIR$/preview.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/controller/appointment.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller/appointment.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controller/reset_password.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller/reset_password.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/templates/email/emailVerification.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/templates/email/emailVerification.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/templates/email/reset_password.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/templates/email/reset_password.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -191,7 +194,17 @@
       <workItem from="1778759480871" duration="930000" />
       <workItem from="1778802398013" duration="628000" />
       <workItem from="1778805352107" duration="175000" />
-      <workItem from="1778810398678" duration="3412000" />
+      <workItem from="1778810398678" duration="3596000" />
+      <workItem from="1778824939503" duration="615000" />
+      <workItem from="1778855446846" duration="1257000" />
+      <workItem from="1778890588023" duration="735000" />
+      <workItem from="1778899399947" duration="1212000" />
+      <workItem from="1778905804211" duration="613000" />
+      <workItem from="1778909231960" duration="1655000" />
+      <workItem from="1778912525022" duration="856000" />
+      <workItem from="1778919946148" duration="1284000" />
+      <workItem from="1778978989979" duration="610000" />
+      <workItem from="1779013646668" duration="2769000" />
     </task>
     <task id="LOCAL-00001" summary="Remove multer-storage-cloudinary due to conflict">
       <option name="closed" value="true" />
@@ -369,7 +382,15 @@
       <option name="project" value="LOCAL" />
       <updated>1778815016406</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="console logs cleanup">
+      <option name="closed" value="true" />
+      <created>1778815451644</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1778815451644</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -409,6 +430,7 @@
     <MESSAGE value="added account settings in client side." />
     <MESSAGE value="made the client calendar read a date if it's full or not." />
     <MESSAGE value="adjusted client calendar badges to be more functional" />
-    <option name="LAST_COMMIT_MESSAGE" value="adjusted client calendar badges to be more functional" />
+    <MESSAGE value="console logs cleanup" />
+    <option name="LAST_COMMIT_MESSAGE" value="console logs cleanup" />
   </component>
 </project>
